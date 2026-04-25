@@ -1,6 +1,21 @@
-.venv/
+# Python
 __pycache__/
+*.py[cod]
 *.pyc
-.egg-info/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Environments
+.venv/
+venv/
+.env
+.env.local
+
+# ML / Modal
 cache/
 *.ckpt
+
+# Local ad uploads (generated at runtime)
+backend/uploads/
