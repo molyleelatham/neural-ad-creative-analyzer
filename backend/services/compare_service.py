@@ -3,6 +3,7 @@ from backend.agents.neural_agent import mock_neural_features
 from backend.agents.pydantic_ai_narrative import enrich_comparison_narrative
 import os
 from backend.agents.segmentation_agent import mock_segments
+from backend.agents.sam3_agent import sam3_segments_for_image
 from backend.models.schemas import (
     AudienceSegment,
     CampaignObjective,
@@ -43,7 +44,7 @@ def _build_summary(
 
 
 async def analyze_variants(
-    variant_inputs: list[tuple[str, str]],
+    variant_inputs: list[tuple[str, str, str | None]],
     objective: CampaignObjective,
     audience_segment: AudienceSegment,
 ) -> ComparisonResult:
@@ -53,10 +54,17 @@ async def analyze_variants(
     variant_inputs: list of (variant_id, original_filename) for display and deterministic mocks.
     """
     analyses: list[VariantAnalysis] = []
-    for variant_id, filename in variant_inputs:
+    for variant_id, filename, file_path in variant_inputs:
         neural = mock_neural_features(filename)
         scores = scores_from_neural(neural)
-        segments = mock_segments()
+        segments = None
+        segments_source = "mock"
+        if file_path:
+            segments = await sam3_segments_for_image(file_path)
+        if not segments:
+            segments = mock_segments()
+        else:
+            segments_source = "sam3"
         analyses.append(
             VariantAnalysis(
                 variant_id=variant_id,
@@ -64,6 +72,7 @@ async def analyze_variants(
                 scores=scores,
                 neural_features=neural,
                 segments=segments,
+                segments_source=segments_source,
                 summary=_build_summary(variant_id, filename, objective, audience_segment),
             )
         )

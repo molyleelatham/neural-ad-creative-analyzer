@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -35,9 +35,13 @@ class NeuralFeatures(BaseModel):
 
 class AdSegment(BaseModel):
     label: str
+    display_label: str | None = None
     confidence: float = Field(..., ge=0, le=1)
     visual_weight_pct: float = Field(..., ge=0, le=100)
+    brain_engagement_score: float | None = Field(default=None, ge=0, le=10)
+    attention_score: float | None = Field(default=None, ge=0, le=10)
     reasoning: str
+    geometry: dict[str, Any] | None = None
 
 
 class VariantAnalysis(BaseModel):
@@ -46,6 +50,7 @@ class VariantAnalysis(BaseModel):
     scores: VariantScore
     neural_features: NeuralFeatures
     segments: list[AdSegment]
+    segments_source: Literal["mock", "sam3"] = "mock"
     summary: str
 
 

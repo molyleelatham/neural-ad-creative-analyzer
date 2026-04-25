@@ -84,12 +84,12 @@ async def compare(
     audience_segment: Annotated[AudienceSegment, Form()],
     files: Annotated[list[UploadFile], File(min_length=2, max_length=5)],
 ) -> ComparisonResult:
-    variant_inputs: list[tuple[str, str]] = []
+    variant_inputs: list[tuple[str, str, str | None]] = []
     for index, upload in enumerate(files):
         path = await save_upload(upload)
         label = f"v{index + 1}"
         original = upload.filename or path.name
-        variant_inputs.append((label, original))
+        variant_inputs.append((label, original, str(path)))
 
     return await analyze_variants(variant_inputs, objective, audience_segment)
 

@@ -40,7 +40,8 @@ def _resolve_model_name() -> str | None:
     has_openai = bool(os.environ.get("OPENAI_API_KEY"))
     has_google = bool(os.environ.get("GOOGLE_API_KEY"))
     if has_google and not has_openai:
-        return os.environ.get("GEMINI_MODEL", "google-gla:gemini-2.0-flash")
+        # Gemini model availability can vary by account; 2.5-flash is the safest default for new users.
+        return os.environ.get("GEMINI_MODEL", "google-gla:gemini-2.5-flash")
     if has_openai:
         return "openai:gpt-4o-mini"
     return None
