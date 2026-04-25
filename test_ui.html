@@ -1,0 +1,1270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TribeV2 Ad Scorer — Test UI</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --border: #30363d;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --orange: #d29922;
+      --purple: #bc8cff;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 2rem;
+    }
+
+    /* --- Layout --- */
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .config-bar {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .config-bar label {
+      color: var(--muted);
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+
+    .config-bar input {
+      flex: 1;
+      min-width: 300px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 0;
+    }
+
+    .tab {
+      padding: 0.6rem 1.5rem;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 8px 8px 0 0;
+    }
+
+    .tab.active {
+      background: var(--bg);
+      color: var(--accent);
+      border-bottom: 2px solid var(--bg);
+      position: relative;
+      z-index: 1;
+    }
+
+    .panel {
+      display: none;
+      border: 1px solid var(--border);
+      border-radius: 0 8px 8px 8px;
+      padding: 1.5rem;
+      background: var(--surface);
+    }
+
+    .panel.active { display: block; }
+
+    /* --- Forms --- */
+    .form-row {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-end;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .form-group label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    input, select {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      outline: none;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+    }
+
+    input[type="file"] {
+      padding: 0.4rem;
+    }
+
+    input[type="file"]::file-selector-button {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      margin-right: 0.5rem;
+    }
+
+    button {
+      padding: 0.55rem 1.5rem;
+      border-radius: 6px;
+      border: none;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: opacity 0.15s;
+    }
+
+    button:hover { opacity: 0.85; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .btn-health {
+      background: var(--green);
+      color: #fff;
+    }
+
+    .btn-clear {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    /* --- Status --- */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0;
+      font-size: 0.8rem;
+      min-height: 2rem;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status-ok { color: var(--green); }
+    .status-err { color: var(--red); }
+    .status-info { color: var(--muted); }
+
+    /* --- Results --- */
+    .results {
+      margin-top: 1.5rem;
+    }
+
+    .results-header {
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      color: var(--accent);
+    }
+
+    /* Score cards */
+    .score-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      text-align: center;
+    }
+
+    .card .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .card .label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      margin-top: 0.2rem;
+    }
+
+    .val-high { color: var(--green); }
+    .val-mid { color: var(--orange); }
+    .val-low { color: var(--red); }
+    .val-accent { color: var(--accent); }
+    .val-purple { color: var(--purple); }
+
+    /* Baseline table */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+    }
+
+    .data-table td {
+      padding: 0.4rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .delta-pos { color: var(--green); }
+    .delta-neg { color: var(--red); }
+
+    /* ROI bar chart */
+    .roi-bars {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .roi-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .roi-bar-label {
+      width: 70px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-align: right;
+    }
+
+    .roi-bar-track {
+      flex: 1;
+      height: 18px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .roi-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.4s ease;
+    }
+
+    .roi-bar-value {
+      font-size: 0.7rem;
+      width: 50px;
+      color: var(--muted);
+    }
+
+    /* AB comparison */
+    .ab-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .ab-col-header {
+      font-weight: 600;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+      padding-bottom: 0.3rem;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .ab-col-header.winner {
+      color: var(--green);
+      border-color: var(--green);
+    }
+
+    .winner-banner {
+      background: linear-gradient(135deg, #238636 0%, #1a7f37 100%);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .winner-banner .winner-text {
+      font-size: 1.2rem;
+      font-weight: 700;
+    }
+
+    .winner-banner .confidence-text {
+      font-size: 0.8rem;
+      opacity: 0.85;
+      margin-top: 0.2rem;
+    }
+
+    /* Timeline */
+    .timeline-chart {
+      width: 100%;
+      height: 200px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 1.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .timeline-canvas {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* JSON raw output */
+    .json-toggle {
+      font-size: 0.8rem;
+      color: var(--accent);
+      cursor: pointer;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+    }
+
+    .json-output {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1rem;
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .json-output pre {
+      font-size: 0.75rem;
+      line-height: 1.5;
+      color: var(--muted);
+    }
+
+    .json-output.visible { display: block; }
+
+    /* Pillar cards */
+    .pillar-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .pillar-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.85rem;
+      border-left: 4px solid var(--accent);
+    }
+
+    .pillar-card .pillar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.4rem;
+    }
+
+    .pillar-card .pillar-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .pillar-card .pillar-score {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .pillar-card .pillar-desc {
+      font-size: 0.65rem;
+      color: var(--muted);
+      line-height: 1.4;
+      margin-bottom: 0.4rem;
+    }
+
+    .pillar-card .pillar-regions {
+      font-size: 0.6rem;
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .pillar-bar-track {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      margin-top: 0.4rem;
+      overflow: hidden;
+    }
+
+    .pillar-bar-fill {
+      height: 100%;
+      border-radius: 3px;
+      transition: width 0.4s ease;
+    }
+
+    /* Brain regions table */
+    .brain-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .brain-table th {
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 2px solid var(--border);
+      color: var(--muted);
+      font-size: 0.7rem;
+      text-transform: uppercase;
+    }
+
+    .brain-table td {
+      padding: 0.4rem 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brain-table .region-indicator {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 0.4rem;
+      vertical-align: middle;
+    }
+
+    /* Sections */
+    .section-title {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      margin-top: 1rem;
+    }
+
+    .section-divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.25rem 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>TribeV2 Ad Scorer</h1>
+    <p class="subtitle">Test UI for brain-encoding-based ad analysis</p>
+
+    <!-- API URL config -->
+    <div class="config-bar">
+      <label for="apiUrl">API URL</label>
+      <input type="text" id="apiUrl" value="" placeholder="Leave empty for same-origin (recommended)" />
+      <button class="btn-health" onclick="checkHealth()">Health Check</button>
+    </div>
+
+    <div class="status-bar" id="healthStatus">
+      <span class="status-info">Configure API URL above, then run a health check.</span>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('analyze')">Analyze (Single Ad)</div>
+      <div class="tab" onclick="switchTab('compare')">Compare (A/B Test)</div>
+    </div>
+
+    <!-- ANALYZE PANEL -->
+    <div class="panel active" id="panel-analyze">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="analyzeFile">Ad File</label>
+          <input type="file" id="analyzeFile" accept="video/*,audio/*,image/*,.txt,.mp4,.mp3,.wav,.avi,.mov,.png,.jpg,.jpeg,.webp,.bmp,.gif" />
+        </div>
+        <div class="form-group">
+          <label for="analyzeModality">Modality</label>
+          <select id="analyzeModality">
+            <option value="video">Video</option>
+            <option value="image">Image</option>
+            <option value="audio">Audio</option>
+            <option value="text">Text</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="analyzeAdId">Ad ID</label>
+          <input type="text" id="analyzeAdId" value="test_ad" placeholder="ad label" />
+        </div>
+        <button class="btn-primary" id="analyzeBtn" onclick="runAnalyze()">Analyze</button>
+        <button class="btn-clear" onclick="clearResults('analyze')">Clear</button>
+      </div>
+
+      <div class="status-bar" id="analyzeStatus"></div>
+      <div class="results" id="analyzeResults"></div>
+    </div>
+
+    <!-- COMPARE PANEL -->
+    <div class="panel" id="panel-compare">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="compareFileA">Ad A File</label>
+          <input type="file" id="compareFileA" accept="video/*,audio/*,image/*,.txt,.mp4,.mp3,.wav,.avi,.mov,.png,.jpg,.jpeg,.webp,.bmp,.gif" />
+        </div>
+        <div class="form-group">
+          <label for="compareAdAId">Ad A ID</label>
+          <input type="text" id="compareAdAId" value="ad_A" placeholder="ad A label" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="compareFileB">Ad B File</label>
+          <input type="file" id="compareFileB" accept="video/*,audio/*,image/*,.txt,.mp4,.mp3,.wav,.avi,.mov,.png,.jpg,.jpeg,.webp,.bmp,.gif" />
+        </div>
+        <div class="form-group">
+          <label for="compareAdBId">Ad B ID</label>
+          <input type="text" id="compareAdBId" value="ad_B" placeholder="ad B label" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="compareModality">Modality</label>
+          <select id="compareModality">
+            <option value="video">Video</option>
+            <option value="image">Image</option>
+            <option value="audio">Audio</option>
+            <option value="text">Text</option>
+          </select>
+        </div>
+        <button class="btn-primary" id="compareBtn" onclick="runCompare()">Compare A/B</button>
+        <button class="btn-clear" onclick="clearResults('compare')">Clear</button>
+      </div>
+
+      <div class="status-bar" id="compareStatus"></div>
+      <div class="results" id="compareResults"></div>
+    </div>
+  </div>
+
+  <script>
+    // ─── Helpers ───────────────────────────────────────────────
+    const $ = id => document.getElementById(id);
+
+    function getApiUrl() {
+      return $('apiUrl').value.replace(/\/+$/, '');
+    }
+
+    function setStatus(id, html) {
+      $(id).innerHTML = html;
+    }
+
+    function statusLoading(msg) {
+      return `<span class="spinner"></span><span class="status-info">${msg}</span>`;
+    }
+
+    function statusOk(msg) {
+      return `<span class="status-ok">${msg}</span>`;
+    }
+
+    function statusErr(msg) {
+      return `<span class="status-err">${msg}</span>`;
+    }
+
+    function valClass(v, threshHigh = 0.6, threshLow = 0.3) {
+      if (v >= threshHigh) return 'val-high';
+      if (v >= threshLow) return 'val-mid';
+      return 'val-low';
+    }
+
+    function pct(v) { return (v * 100).toFixed(1) + '%'; }
+    function f3(v) { return v.toFixed(3); }
+    function f1(v) { return v.toFixed(1); }
+
+    // ─── Auto-detect modality from file type ─────────────────
+    function detectModality(file) {
+      if (!file) return null;
+      const type = file.type.toLowerCase();
+      const name = file.name.toLowerCase();
+      if (type.startsWith('image/') || /\.(png|jpg|jpeg|webp|bmp|gif|tiff)$/.test(name)) return 'image';
+      if (type.startsWith('video/') || /\.(mp4|avi|mov|mkv|webm)$/.test(name)) return 'video';
+      if (type.startsWith('audio/') || /\.(mp3|wav|flac|aac|ogg)$/.test(name)) return 'audio';
+      if (type.startsWith('text/') || /\.txt$/.test(name)) return 'text';
+      return null;
+    }
+
+    // Auto-set modality dropdown when file is selected
+    $('analyzeFile').addEventListener('change', function() {
+      const m = detectModality(this.files[0]);
+      if (m) $('analyzeModality').value = m;
+    });
+    $('compareFileA').addEventListener('change', function() {
+      const m = detectModality(this.files[0]);
+      if (m) $('compareModality').value = m;
+    });
+    $('compareFileB').addEventListener('change', function() {
+      const m = detectModality(this.files[0]);
+      if (m) $('compareModality').value = m;
+    });
+
+    // ─── Tabs ─────────────────────────────────────────────────
+    function switchTab(name) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      event.target.classList.add('active');
+      $(`panel-${name}`).classList.add('active');
+    }
+
+    // ─── Health Check ─────────────────────────────────────────
+    async function checkHealth() {
+      setStatus('healthStatus', statusLoading('Checking health...'));
+      try {
+        const t0 = performance.now();
+        const resp = await fetch(`${getApiUrl()}/health`);
+        const ms = Math.round(performance.now() - t0);
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        setStatus('healthStatus', statusOk(
+          `Connected (${ms}ms) &mdash; GPU: ${data.gpu || 'none'}, Model loaded: ${data.model_loaded}`
+        ));
+      } catch (e) {
+        setStatus('healthStatus', statusErr(`Failed: ${e.message}`));
+      }
+    }
+
+    // ─── Analyze ──────────────────────────────────────────────
+    async function runAnalyze() {
+      const file = $('analyzeFile').files[0];
+      if (!file) { setStatus('analyzeStatus', statusErr('Select a file first.')); return; }
+
+      $('analyzeBtn').disabled = true;
+      setStatus('analyzeStatus', statusLoading('Uploading and analyzing... (may take 30-60s on cold start)'));
+      $('analyzeResults').innerHTML = '';
+
+      const form = new FormData();
+      form.append('file', file);
+      form.append('modality', $('analyzeModality').value);
+      form.append('ad_id', $('analyzeAdId').value || 'test_ad');
+
+      try {
+        const t0 = performance.now();
+        const resp = await fetch(`${getApiUrl()}/analyze`, { method: 'POST', body: form });
+        const ms = Math.round(performance.now() - t0);
+        if (!resp.ok) {
+          const err = await resp.text();
+          throw new Error(`HTTP ${resp.status}: ${err}`);
+        }
+        const data = await resp.json();
+        setStatus('analyzeStatus', statusOk(`Done in ${(ms/1000).toFixed(1)}s`));
+        renderAnalyzeResults(data);
+      } catch (e) {
+        setStatus('analyzeStatus', statusErr(`Error: ${e.message}`));
+      } finally {
+        $('analyzeBtn').disabled = false;
+      }
+    }
+
+    function renderAnalyzeResults(data) {
+      const ad = data.ad;
+      const bl = data.vs_baseline;
+      let html = '';
+
+      // Score cards
+      html += `<div class="results-header">Ad Score: ${ad.ad_id}</div>`;
+      html += `<div class="score-cards">
+        <div class="card">
+          <div class="value ${valClass(ad.composite_score)}">${f3(ad.composite_score)}</div>
+          <div class="label">Composite</div>
+        </div>
+        <div class="card">
+          <div class="value ${valClass(ad.peak_score)}">${f3(ad.peak_score)}</div>
+          <div class="label">Peak P(Convert)</div>
+        </div>
+        <div class="card">
+          <div class="value ${valClass(ad.sustained_score)}">${f3(ad.sustained_score)}</div>
+          <div class="label">Sustained</div>
+        </div>
+        <div class="card">
+          <div class="value val-accent">${f1(ad.dropoff_penalty)}</div>
+          <div class="label">Dropoff Penalty</div>
+        </div>
+        <div class="card">
+          <div class="value val-purple">${ad.dominant_emotion_overall}</div>
+          <div class="label">Dominant ROI</div>
+        </div>
+        <div class="card">
+          <div class="value val-accent">${ad.T_seconds}s</div>
+          <div class="label">Duration</div>
+        </div>
+      </div>`;
+
+      // Baseline verdict
+      const verdictColor = bl.verdict === 'above_average' ? 'val-high' :
+                           bl.verdict === 'average' ? 'val-mid' : 'val-low';
+      html += `<div class="score-cards">
+        <div class="card">
+          <div class="value ${verdictColor}">${bl.verdict.replace(/_/g, ' ')}</div>
+          <div class="label">vs Baseline Verdict</div>
+        </div>
+        <div class="card">
+          <div class="value val-accent">${f1(bl.percentile)}th</div>
+          <div class="label">Percentile</div>
+        </div>
+      </div>`;
+
+      // ── Neuromarketing Pillars ───────────────────────────────
+      if (data.pillars && data.pillars.length > 0) {
+        html += `<hr class="section-divider" />`;
+        html += `<div class="section-title">Neuromarketing Pillars</div>`;
+        html += renderPillarCards(data.pillars);
+      }
+
+      // ── Brain Region Activation Table ──────────────────────
+      if (data.brain && data.brain.regions) {
+        html += `<div class="section-title">Brain Region Signals</div>`;
+        html += renderBrainRegionTable(data.brain.regions);
+      }
+
+      // ROI bar chart
+      html += `<div class="section-title">Brain ROI Activation</div>`;
+      html += renderROIBars(ad.roi_means);
+
+      // Baseline comparison table
+      html += `<div class="section-title">Score vs Baseline</div>`;
+      html += renderBaselineTable(bl.score_vs_baseline);
+
+      html += `<div class="section-title">ROI vs Baseline</div>`;
+      html += renderBaselineTable(bl.roi_vs_baseline);
+
+      // ── Pillar Timeline Chart ──────────────────────────────
+      if (data.pillar_timeline && data.pillar_timeline.length > 0) {
+        html += `<div class="section-title">Pillar Timeline</div>`;
+        html += `<div class="timeline-chart" style="height:250px"><canvas class="timeline-canvas" id="pillarTimeline"></canvas></div>`;
+      }
+
+      // P(Convert) Timeline chart
+      if (ad.timeline && ad.timeline.length > 0) {
+        html += `<div class="section-title">P(Convert) Timeline</div>`;
+        html += `<div class="timeline-chart"><canvas class="timeline-canvas" id="analyzeTimeline"></canvas></div>`;
+      }
+
+      // ── Brain activation summary ───────────────────────────
+      if (data.brain) {
+        html += `<div class="section-title">Brain Activation Summary</div>`;
+        html += `<div class="score-cards">
+          <div class="card">
+            <div class="value val-accent">${data.brain.n_vertices.toLocaleString()}</div>
+            <div class="label">Total Vertices</div>
+          </div>
+          <div class="card">
+            <div class="value val-accent">${data.brain.duration_seconds}s</div>
+            <div class="label">Duration</div>
+          </div>
+          <div class="card">
+            <div class="value val-accent">${data.brain.regions.length}</div>
+            <div class="label">Brain Regions</div>
+          </div>
+        </div>`;
+      }
+
+      // JSON toggle
+      html += `<hr class="section-divider" />`;
+      html += `<span class="json-toggle" onclick="this.nextElementSibling.classList.toggle('visible')">Show raw JSON</span>`;
+      html += `<div class="json-output"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+
+      $('analyzeResults').innerHTML = html;
+
+      // Draw timelines
+      if (data.pillar_timeline && data.pillar_timeline.length > 0) {
+        requestAnimationFrame(() => drawPillarTimeline('pillarTimeline', data.pillar_timeline, data.pillars));
+      }
+      if (ad.timeline && ad.timeline.length > 0) {
+        requestAnimationFrame(() => drawTimeline('analyzeTimeline', ad.timeline));
+      }
+    }
+
+    function renderROIBars(roi) {
+      const rois = [
+        { key: 'emotion',   label: 'Emotion',   color: '#f85149' },
+        { key: 'language',  label: 'Language',   color: '#58a6ff' },
+        { key: 'attention', label: 'Attention',  color: '#d29922' },
+        { key: 'visual',    label: 'Visual',     color: '#3fb950' },
+        { key: 'dmn',       label: 'DMN',        color: '#bc8cff' },
+      ];
+      const maxVal = Math.max(...rois.map(r => Math.abs(roi[r.key])), 0.001);
+      let html = '<div class="roi-bars">';
+      for (const r of rois) {
+        const v = roi[r.key];
+        const w = Math.min(Math.abs(v) / maxVal * 100, 100);
+        html += `<div class="roi-bar-row">
+          <span class="roi-bar-label">${r.label}</span>
+          <div class="roi-bar-track">
+            <div class="roi-bar-fill" style="width:${w}%;background:${r.color}"></div>
+          </div>
+          <span class="roi-bar-value">${f3(v)}</span>
+        </div>`;
+      }
+      html += '</div>';
+      return html;
+    }
+
+    function renderBaselineTable(metrics) {
+      let html = `<table class="data-table">
+        <thead><tr><th>Metric</th><th>Ad</th><th>Baseline</th><th>Delta</th><th>Z-Score</th><th>Percentile</th></tr></thead><tbody>`;
+      for (const [key, m] of Object.entries(metrics)) {
+        const dClass = m.delta >= 0 ? 'delta-pos' : 'delta-neg';
+        const sign = m.delta >= 0 ? '+' : '';
+        html += `<tr>
+          <td>${key}</td>
+          <td>${f3(m.ad_value)}</td>
+          <td>${f3(m.baseline)}</td>
+          <td class="${dClass}">${sign}${f3(m.delta)}</td>
+          <td>${f1(m.z_score)}</td>
+          <td>${f1(m.percentile)}%</td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+
+    // ─── Compare ──────────────────────────────────────────────
+    async function runCompare() {
+      const fileA = $('compareFileA').files[0];
+      const fileB = $('compareFileB').files[0];
+      if (!fileA || !fileB) {
+        setStatus('compareStatus', statusErr('Select both files.'));
+        return;
+      }
+
+      $('compareBtn').disabled = true;
+      setStatus('compareStatus', statusLoading('Uploading and comparing... (may take 30-90s)'));
+      $('compareResults').innerHTML = '';
+
+      const form = new FormData();
+      form.append('file_a', fileA);
+      form.append('file_b', fileB);
+      form.append('modality', $('compareModality').value);
+      form.append('ad_a_id', $('compareAdAId').value || 'ad_A');
+      form.append('ad_b_id', $('compareAdBId').value || 'ad_B');
+
+      try {
+        const t0 = performance.now();
+        const resp = await fetch(`${getApiUrl()}/compare`, { method: 'POST', body: form });
+        const ms = Math.round(performance.now() - t0);
+        if (!resp.ok) {
+          const err = await resp.text();
+          throw new Error(`HTTP ${resp.status}: ${err}`);
+        }
+        const data = await resp.json();
+        setStatus('compareStatus', statusOk(`Done in ${(ms/1000).toFixed(1)}s`));
+        renderCompareResults(data);
+      } catch (e) {
+        setStatus('compareStatus', statusErr(`Error: ${e.message}`));
+      } finally {
+        $('compareBtn').disabled = false;
+      }
+    }
+
+    function renderCompareResults(data) {
+      const a = data.ad_a;
+      const b = data.ad_b;
+      const ab = data.ab_result;
+      let html = '';
+
+      // Winner banner
+      const confPct = pct(ab.confidence);
+      html += `<div class="winner-banner">
+        <div class="winner-text">Winner: ${ab.winner}</div>
+        <div class="confidence-text">Confidence: ${confPct} &mdash; P(A wins overall): ${pct(ab.P_A_wins_overall)}</div>
+      </div>`;
+
+      // Side-by-side scores
+      const aWins = ab.winner === a.ad_id;
+      html += `<div class="ab-section">
+        <div>
+          <div class="ab-col-header ${aWins ? 'winner' : ''}">${a.ad_id} ${aWins ? '(Winner)' : ''}</div>
+          ${renderAdCards(a)}
+        </div>
+        <div>
+          <div class="ab-col-header ${!aWins ? 'winner' : ''}">${b.ad_id} ${!aWins ? '(Winner)' : ''}</div>
+          ${renderAdCards(b)}
+        </div>
+      </div>`;
+
+      // AB probability table
+      html += `<div class="section-title">Head-to-Head Probabilities</div>`;
+      html += `<table class="data-table">
+        <thead><tr><th>Metric</th><th>P(A &gt; B)</th><th>Favours</th></tr></thead><tbody>`;
+      const probs = [
+        ['Peak Score', ab.P_A_beats_B_peak_score],
+        ['Sustained Score', ab.P_A_beats_B_sustained_score],
+        ['Composite Score', ab.P_A_beats_B_composite_score],
+        ['Overall (per-timestep)', ab.P_A_wins_overall],
+      ];
+      for (const [label, p] of probs) {
+        const favours = p > 0.5 ? a.ad_id : b.ad_id;
+        const cls = p > 0.5 ? 'delta-pos' : 'delta-neg';
+        html += `<tr><td>${label}</td><td>${pct(p)}</td><td class="${cls}">${favours}</td></tr>`;
+      }
+      html += '</tbody></table>';
+
+      // ROI comparison
+      html += `<div class="section-title">ROI Comparison (A &minus; B)</div>`;
+      html += `<table class="data-table">
+        <thead><tr><th>ROI</th><th>Ad A</th><th>Ad B</th><th>Delta</th><th>Stronger</th></tr></thead><tbody>`;
+      for (const [roi, c] of Object.entries(ab.roi_comparison)) {
+        const dClass = c.delta >= 0 ? 'delta-pos' : 'delta-neg';
+        const sign = c.delta >= 0 ? '+' : '';
+        const stronger = c.a_stronger ? a.ad_id : b.ad_id;
+        html += `<tr>
+          <td>${roi}</td>
+          <td>${f3(c.ad_a)}</td>
+          <td>${f3(c.ad_b)}</td>
+          <td class="${dClass}">${sign}${f3(c.delta)}</td>
+          <td>${stronger}</td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+
+      // Side-by-side ROI bars
+      html += `<div class="section-title">ROI Activation</div>`;
+      html += `<div class="ab-section">
+        <div>${renderROIBars(a.roi_means)}</div>
+        <div>${renderROIBars(b.roi_means)}</div>
+      </div>`;
+
+      // Side-by-side timelines
+      if (a.timeline?.length && b.timeline?.length) {
+        html += `<div class="section-title">P(Convert) Timelines</div>`;
+        html += `<div class="ab-section">
+          <div>
+            <div class="timeline-chart"><canvas class="timeline-canvas" id="compareTimelineA"></canvas></div>
+          </div>
+          <div>
+            <div class="timeline-chart"><canvas class="timeline-canvas" id="compareTimelineB"></canvas></div>
+          </div>
+        </div>`;
+      }
+
+      // JSON toggle
+      html += `<hr class="section-divider" />`;
+      html += `<span class="json-toggle" onclick="this.nextElementSibling.classList.toggle('visible')">Show raw JSON</span>`;
+      html += `<div class="json-output"><pre>${JSON.stringify(data, null, 2)}</pre></div>`;
+
+      $('compareResults').innerHTML = html;
+
+      if (a.timeline?.length) {
+        requestAnimationFrame(() => drawTimeline('compareTimelineA', a.timeline));
+      }
+      if (b.timeline?.length) {
+        requestAnimationFrame(() => drawTimeline('compareTimelineB', b.timeline));
+      }
+    }
+
+    function renderAdCards(ad) {
+      return `<div class="score-cards" style="grid-template-columns:1fr 1fr;">
+        <div class="card"><div class="value ${valClass(ad.composite_score)}">${f3(ad.composite_score)}</div><div class="label">Composite</div></div>
+        <div class="card"><div class="value ${valClass(ad.peak_score)}">${f3(ad.peak_score)}</div><div class="label">Peak</div></div>
+        <div class="card"><div class="value ${valClass(ad.sustained_score)}">${f3(ad.sustained_score)}</div><div class="label">Sustained</div></div>
+        <div class="card"><div class="value val-purple">${ad.dominant_emotion_overall}</div><div class="label">Dominant ROI</div></div>
+      </div>`;
+    }
+
+    // ─── Timeline Drawing (Canvas) ────────────────────────────
+    function drawTimeline(canvasId, timeline) {
+      const canvas = $(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * 2;
+      canvas.height = rect.height * 2;
+      ctx.scale(2, 2);
+      const W = rect.width;
+      const H = rect.height;
+
+      const padding = { top: 15, right: 15, bottom: 25, left: 45 };
+      const plotW = W - padding.left - padding.right;
+      const plotH = H - padding.top - padding.bottom;
+
+      const values = timeline.map(t => t.posterior_P_convert);
+      const maxY = Math.min(Math.max(...values) * 1.15, 1);
+      const minY = 0;
+      const maxX = timeline[timeline.length - 1].second;
+
+      const x = (sec) => padding.left + (sec / maxX) * plotW;
+      const y = (val) => padding.top + plotH - ((val - minY) / (maxY - minY)) * plotH;
+
+      // Grid lines
+      ctx.strokeStyle = '#30363d';
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i <= 4; i++) {
+        const gy = padding.top + (plotH / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, gy);
+        ctx.lineTo(W - padding.right, gy);
+        ctx.stroke();
+      }
+
+      // Y axis labels
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'right';
+      for (let i = 0; i <= 4; i++) {
+        const val = minY + ((maxY - minY) / 4) * (4 - i);
+        const gy = padding.top + (plotH / 4) * i;
+        ctx.fillText(val.toFixed(2), padding.left - 5, gy + 3);
+      }
+
+      // X axis labels
+      ctx.textAlign = 'center';
+      const step = Math.ceil(maxX / 5);
+      for (let s = 0; s <= maxX; s += step) {
+        ctx.fillText(`${s}s`, x(s), H - 5);
+      }
+
+      // Line fill
+      ctx.beginPath();
+      ctx.moveTo(x(timeline[0].second), y(0));
+      for (const t of timeline) ctx.lineTo(x(t.second), y(t.posterior_P_convert));
+      ctx.lineTo(x(timeline[timeline.length-1].second), y(0));
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(88, 166, 255, 0.12)';
+      ctx.fill();
+
+      // Line
+      ctx.beginPath();
+      for (let i = 0; i < timeline.length; i++) {
+        const t = timeline[i];
+        if (i === 0) ctx.moveTo(x(t.second), y(t.posterior_P_convert));
+        else ctx.lineTo(x(t.second), y(t.posterior_P_convert));
+      }
+      ctx.strokeStyle = '#58a6ff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+
+      // Peak marker
+      const peakIdx = values.indexOf(Math.max(...values));
+      const peak = timeline[peakIdx];
+      ctx.beginPath();
+      ctx.arc(x(peak.second), y(peak.posterior_P_convert), 4, 0, Math.PI * 2);
+      ctx.fillStyle = '#3fb950';
+      ctx.fill();
+      ctx.fillStyle = '#3fb950';
+      ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Peak: ${f3(peak.posterior_P_convert)}`, x(peak.second), y(peak.posterior_P_convert) - 8);
+    }
+
+    // ─── Pillar Cards ─────────────────────────────────────────
+    function renderPillarCards(pillars) {
+      const maxScore = Math.max(...pillars.map(p => p.score), 0.001);
+      let html = '<div class="pillar-cards">';
+      for (const p of pillars) {
+        const barW = Math.min((p.score / maxScore) * 100, 100);
+        const scoreClass = valClass(p.score, 0.08, 0.03);
+        html += `<div class="pillar-card" style="border-left-color:${p.color}">
+          <div class="pillar-header">
+            <span class="pillar-label">${p.label}</span>
+            <span class="pillar-score ${scoreClass}">${f3(p.score)}</span>
+          </div>
+          <div class="pillar-desc">${p.description}</div>
+          <div class="pillar-bar-track">
+            <div class="pillar-bar-fill" style="width:${barW}%;background:${p.color}"></div>
+          </div>
+          <div class="pillar-regions">${p.brain_regions.join(', ')}</div>
+        </div>`;
+      }
+      html += '</div>';
+      return html;
+    }
+
+    // ─── Brain Region Activation Table ────────────────────────
+    function renderBrainRegionTable(regions) {
+      const regionColors = {
+        emotion: '#f85149', language: '#58a6ff', attention: '#d29922',
+        visual: '#3fb950', dmn: '#bc8cff'
+      };
+      let html = `<table class="brain-table">
+        <thead><tr>
+          <th>Region</th><th>Mean Activation</th><th>Peak Activation</th>
+          <th>Peak Time</th><th>Vertices</th>
+        </tr></thead><tbody>`;
+      for (const r of regions) {
+        const color = regionColors[r.roi] || '#8b949e';
+        const totalVerts = r.vertex_range.reduce((sum, range) => sum + (range[1] - range[0] + 1), 0);
+        html += `<tr>
+          <td><span class="region-indicator" style="background:${color}"></span>${r.label}</td>
+          <td>${f3(r.mean_activation)}</td>
+          <td class="${valClass(r.peak_activation, 0.1, 0.05)}">${f3(r.peak_activation)}</td>
+          <td>${f1(r.peak_second)}s</td>
+          <td>${totalVerts.toLocaleString()}</td>
+        </tr>`;
+      }
+      html += '</tbody></table>';
+      return html;
+    }
+
+    // ─── Pillar Timeline (multi-line chart) ───────────────────
+    function drawPillarTimeline(canvasId, timeline, pillarDefs) {
+      const canvas = $(canvasId);
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * 2;
+      canvas.height = rect.height * 2;
+      ctx.scale(2, 2);
+      const W = rect.width;
+      const H = rect.height;
+
+      const padding = { top: 15, right: 120, bottom: 25, left: 45 };
+      const plotW = W - padding.left - padding.right;
+      const plotH = H - padding.top - padding.bottom;
+
+      const pillarKeys = ['hook', 'emotion', 'persuasion', 'memory', 'sensory', 'engagement'];
+      const pillarColors = {};
+      if (pillarDefs) {
+        for (const p of pillarDefs) pillarColors[p.key] = p.color;
+      }
+      const defaultColors = {
+        hook: '#FF6B6B', emotion: '#4ECDC4', persuasion: '#45B7D1',
+        memory: '#96CEB4', sensory: '#FFEAA7', engagement: '#DDA0DD'
+      };
+
+      // Find max value across all pillars
+      let maxY = 0;
+      for (const t of timeline) {
+        for (const k of pillarKeys) {
+          if (t[k] > maxY) maxY = t[k];
+        }
+      }
+      maxY = Math.max(maxY * 1.15, 0.001);
+      const minY = 0;
+      const maxX = timeline[timeline.length - 1].second;
+
+      const x = (sec) => padding.left + (sec / maxX) * plotW;
+      const y = (val) => padding.top + plotH - ((val - minY) / (maxY - minY)) * plotH;
+
+      // Grid lines
+      ctx.strokeStyle = '#30363d';
+      ctx.lineWidth = 0.5;
+      for (let i = 0; i <= 4; i++) {
+        const gy = padding.top + (plotH / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, gy);
+        ctx.lineTo(padding.left + plotW, gy);
+        ctx.stroke();
+      }
+
+      // Y axis labels
+      ctx.fillStyle = '#8b949e';
+      ctx.font = '10px sans-serif';
+      ctx.textAlign = 'right';
+      for (let i = 0; i <= 4; i++) {
+        const val = minY + ((maxY - minY) / 4) * (4 - i);
+        const gy = padding.top + (plotH / 4) * i;
+        ctx.fillText(val.toFixed(3), padding.left - 5, gy + 3);
+      }
+
+      // X axis labels
+      ctx.textAlign = 'center';
+      const step = Math.max(1, Math.ceil(maxX / 6));
+      for (let s = 0; s <= maxX; s += step) {
+        ctx.fillText(`${s}s`, x(s), H - 5);
+      }
+
+      // Draw each pillar line
+      for (const k of pillarKeys) {
+        const color = pillarColors[k] || defaultColors[k] || '#8b949e';
+        ctx.beginPath();
+        for (let i = 0; i < timeline.length; i++) {
+          const t = timeline[i];
+          if (i === 0) ctx.moveTo(x(t.second), y(t[k]));
+          else ctx.lineTo(x(t.second), y(t[k]));
+        }
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      // Legend (right side)
+      const pillarLabels = {
+        hook: 'Hook', emotion: 'Emotion', persuasion: 'Persuasion',
+        memory: 'Memory', sensory: 'Sensory', engagement: 'Engagement'
+      };
+      let ly = padding.top + 5;
+      for (const k of pillarKeys) {
+        const color = pillarColors[k] || defaultColors[k] || '#8b949e';
+        ctx.fillStyle = color;
+        ctx.fillRect(padding.left + plotW + 10, ly, 12, 3);
+        ctx.fillStyle = '#8b949e';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(pillarLabels[k] || k, padding.left + plotW + 26, ly + 4);
+        ly += 16;
+      }
+    }
+
+    // ─── Clear results ────────────────────────────────────────
+    function clearResults(mode) {
+      $(`${mode}Results`).innerHTML = '';
+      $(`${mode}Status`).innerHTML = '';
+    }
+  </script>
+</body>
+</html>

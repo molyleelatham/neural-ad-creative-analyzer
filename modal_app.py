@@ -19,8 +19,6 @@ Setup (one-time):
      OR  modal serve modal_app.py       # hot-reload dev server
 """
 
-from __future__ import annotations
-
 import os
 from pathlib import Path
 from typing import Annotated, List
@@ -75,9 +73,6 @@ def _configure_logfire() -> bool:
     try:
         import logfire
         logfire.configure(token=token)
-        # Trace every Pydantic model validation — AdScore, BaselineMetric,
-        # ABResult, etc. — automatically.  Records successes AND failures
-        # (e.g. a bad field value) with full field details.
         logfire.instrument_pydantic()
         return True
     except Exception:
@@ -90,8 +85,10 @@ def create_fastapi_app():
     Called inside the Modal container where tribev2 + torch are available.
     Imports are lazy so the module can be parsed on the host.
     """
-    from fastapi import FastAPI, File, Form, HTTPException, UploadFile
-    from fastapi.middleware.cors import CORSMiddleware
+    import traceback
+
+    from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+    from fastapi.responses import HTMLResponse, JSONResponse
 
     # ── Logfire — must run before FastAPI app is created ──────────────
     logfire_active = _configure_logfire()
@@ -106,33 +103,64 @@ def create_fastapi_app():
             "- `POST /compare` — Upload TWO ads for head-to-head A/B testing "
             "(P(A>B), ROI deltas, winner + confidence)"
         ),
-        version="0.3.0",
+        version="0.4.0",
     )
 
     # ── Logfire FastAPI instrumentation ───────────────────────────────
-    # Traces every request: latency, status, route, endpoint args,
-    # validation errors.  Noop if Logfire is not configured.
     if logfire_active:
         import logfire
         logfire.instrument_fastapi(api)
 
-    api.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # ── CORS + error-catching middleware ─────────────────────────────
+    CORS_HEADERS = {
+        "access-control-allow-origin": "*",
+        "access-control-allow-methods": "*",
+        "access-control-allow-headers": "*",
+        "access-control-expose-headers": "*",
+    }
+
+    @api.middleware("http")
+    async def cors_and_errors(request: Request, call_next):
+        # Handle preflight OPTIONS
+        if request.method == "OPTIONS":
+            return JSONResponse(content={"ok": True}, headers=CORS_HEADERS)
+
+        try:
+            response = await call_next(request)
+        except Exception as exc:
+            tb = traceback.format_exception(type(exc), exc, exc.__traceback__)
+            response = JSONResponse(
+                status_code=500,
+                content={
+                    "error": str(exc),
+                    "type": type(exc).__name__,
+                    "traceback": tb,
+                },
+            )
+
+        # Add CORS headers to every response
+        for k, v in CORS_HEADERS.items():
+            response.headers[k] = v
+        return response
 
     # state: model is injected by TribeApp.startup()
     api.state.model = None
 
     # ── routes ────────────────────────────────────────────────────────
 
-    @api.get("/")
+    @api.get("/", response_class=HTMLResponse)
     async def root():
+        """Serve the test UI — same origin as API, no CORS issues."""
+        ui_path = Path("/root/app/static/test_ui.html")
+        if ui_path.exists():
+            return HTMLResponse(content=ui_path.read_text())
+        return HTMLResponse(content="<h1>TribeV2 Ad Scorer</h1><p><a href='/docs'>API Docs</a></p>")
+
+    @api.get("/info")
+    async def info():
         return {
             "service": "tribev2-ad-scorer",
+            "ui": "/",
             "docs": "/docs",
             "health": "/health",
             "modes": {
@@ -156,21 +184,18 @@ def create_fastapi_app():
 
     @api.post("/analyze")
     async def analyze(
-        file: Annotated[UploadFile, File(description="Ad file (video/audio/text)")],
-        modality: Annotated[str, Form(description="video, audio, or text")] = "video",
+        file: Annotated[UploadFile, File(description="Ad file (video/audio/image/text)")],
+        modality: Annotated[str, Form(description="video, audio, image, or text")] = "video",
         ad_id: Annotated[str, Form(description="Label for this ad")] = "ad_001",
     ):
-        """Score ONE ad against the historical average.
-
-        Returns the ad's full score (composite, peak, sustained, ROI
-        breakdown, per-second timeline) **plus** a baseline comparison
-        showing delta, z-score, and percentile for every metric.
-        """
+        """Score ONE ad against the historical average."""
+        import asyncio
         from app.services.pipeline import analyze_single
 
         file_bytes = await file.read()
         filename = file.filename or f"upload.{modality}"
-        return analyze_single(
+        return await asyncio.to_thread(
+            analyze_single,
             model=api.state.model,
             file_bytes=file_bytes,
             filename=filename,
@@ -184,25 +209,19 @@ def create_fastapi_app():
     async def compare(
         file_a: Annotated[UploadFile, File(description="Ad A file")],
         file_b: Annotated[UploadFile, File(description="Ad B file")],
-        modality: Annotated[str, Form(description="video, audio, or text")] = "video",
+        modality: Annotated[str, Form(description="video, audio, image, or text")] = "video",
         ad_a_id: Annotated[str, Form(description="Label for Ad A")] = "ad_A",
         ad_b_id: Annotated[str, Form(description="Label for Ad B")] = "ad_B",
     ):
-        """A/B test TWO ads head-to-head.
-
-        Both ads are scored independently through the full pipeline, then
-        compared pairwise:
-        - P(A > B) per timestep
-        - P(A > B) for peak, sustained, composite
-        - Per-ROI delta (which ad activates each brain system more)
-        - Winner + confidence level
-        """
+        """A/B test TWO ads head-to-head."""
+        import asyncio
         from app.services.pipeline import compare_two
 
         bytes_a = await file_a.read()
         bytes_b = await file_b.read()
 
-        return compare_two(
+        return await asyncio.to_thread(
+            compare_two,
             model=api.state.model,
             file_a={
                 "bytes": bytes_a,
@@ -222,11 +241,7 @@ def create_fastapi_app():
 
     @api.post("/interpret")
     async def interpret(body: dict):
-        """LLM interpretation of scoring results (stub).
-
-        Pass the JSON output from /analyze or /compare as the request
-        body.  Wire up your preferred LLM here.
-        """
+        """LLM interpretation of scoring results (stub)."""
         return {
             "interpretation": (
                 "LLM interpretation not yet wired. Pass the scoring JSON "
@@ -251,13 +266,12 @@ def create_fastapi_app():
     },
     secrets=[
         modal.Secret.from_name("huggingface-secret"),
-        # Optional: modal secret create logfire-secret LOGFIRE_TOKEN=...
-        # If the secret doesn't exist, Logfire runs in noop mode.
         modal.Secret.from_name("logfire-secret"),
     ],
     timeout=600,
-    container_idle_timeout=300,
+    scaledown_window=600,
 )
+@modal.concurrent(max_inputs=4)
 class TribeApp:
     """Wraps TribeModel and serves the FastAPI app on Modal."""
 

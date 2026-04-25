@@ -21,6 +21,7 @@ class InputModality(str, Enum):
     video = "video"
     audio = "audio"
     text = "text"
+    image = "image"
 
 
 # ---------------------------------------------------------------------------
@@ -86,10 +87,81 @@ class BaselineComparison(BaseModel):
     )
 
 
+# ---------------------------------------------------------------------------
+# Neuromarketing pillars
+# ---------------------------------------------------------------------------
+
+class PillarScore(BaseModel):
+    """One neuromarketing pillar score derived from ROI activations."""
+    key: str = Field(..., description="Machine key e.g. hook, emotion, persuasion")
+    label: str = Field(..., description="Human-readable label")
+    description: str = Field(..., description="What this pillar measures")
+    score: float = Field(..., description="Weighted blend of contributing ROIs (0-1)")
+    roi_contributions: Dict[str, float] = Field(
+        ..., description="Which ROIs feed this pillar and their weighted activation"
+    )
+    brain_regions: List[str] = Field(..., description="Anatomical areas involved")
+    color: str = Field(..., description="Hex colour for UI rendering")
+
+
+class PillarTimeline(BaseModel):
+    """Per-second pillar activations for timeline charts."""
+    second: float
+    hook: float
+    emotion: float
+    persuasion: float
+    memory: float
+    sensory: float
+    engagement: float
+
+
+# ---------------------------------------------------------------------------
+# Brain activation data (for 3D brain rendering in UI)
+# ---------------------------------------------------------------------------
+
+class BrainRegionActivation(BaseModel):
+    """Activation summary for a single brain region / ROI."""
+    roi: str = Field(..., description="ROI key (emotion, language, attention, visual, dmn)")
+    label: str = Field(..., description="Human-readable region name")
+    mean_activation: float = Field(..., description="Mean absolute activation across all timesteps")
+    peak_activation: float = Field(..., description="Max activation across timesteps")
+    peak_second: float = Field(..., description="When peak occurred")
+    vertex_range: List[List[int]] = Field(
+        ..., description="Vertex index ranges [[start,end], ...] on fsaverage5 mesh"
+    )
+
+
+class BrainActivationData(BaseModel):
+    """Full brain activation payload — everything a UI needs to render a 3D brain."""
+    n_vertices: int = Field(20484, description="Total vertices on fsaverage5 mesh")
+    n_left: int = Field(10242, description="Left hemisphere vertex count")
+    n_right: int = Field(10242, description="Right hemisphere vertex count")
+    duration_seconds: int = Field(..., description="Total timesteps")
+    regions: List[BrainRegionActivation] = Field(
+        ..., description="Per-region activation summaries"
+    )
+    vertex_activations_mean: List[float] = Field(
+        ..., description="Mean activation per vertex across time (length=n_vertices). "
+        "Use this to colour the brain surface heatmap."
+    )
+    vertex_activations_peak: List[float] = Field(
+        ..., description="Peak activation per vertex across time (length=n_vertices)"
+    )
+
+
 class AnalyzeResponse(BaseModel):
     """Response for /analyze — one ad scored against historical average."""
     ad: AdScore
     vs_baseline: BaselineComparison
+    pillars: List[PillarScore] = Field(
+        ..., description="Neuromarketing pillar breakdown"
+    )
+    pillar_timeline: List[PillarTimeline] = Field(
+        ..., description="Per-second pillar activations for timeline charts"
+    )
+    brain: BrainActivationData = Field(
+        ..., description="Vertex-level brain activation data for 3D rendering"
+    )
     llm_interpretation: Optional[str] = Field(
         None, description="Natural-language summary from LLM (when enabled)"
     )

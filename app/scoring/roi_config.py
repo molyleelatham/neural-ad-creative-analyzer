@@ -164,6 +164,79 @@ HISTORICAL_BASELINE_STD: Dict[str, float] = {
 }
 
 
+# ---------------------------------------------------------------------------
+# Neuromarketing Pillars — group ROIs into actionable dimensions
+#
+# Each pillar maps to one or more low-level ROIs and carries a human-readable
+# label + description for UI rendering.  The ``roi_weights`` dict controls
+# how ROI activations are blended into the pillar score (must sum to 1).
+# ---------------------------------------------------------------------------
+
+@dataclass
+class PillarDef:
+    """Definition of a single neuromarketing pillar."""
+    key: str
+    label: str
+    description: str
+    roi_weights: Dict[str, float]          # ROI → weight (sum to 1)
+    brain_regions: List[str]               # human-readable anatomy
+    color: str                             # hex colour for UI rendering
+
+
+PILLAR_DEFS: List[PillarDef] = [
+    PillarDef(
+        key="hook",
+        label="Hook",
+        description="Initial attentional capture — does the ad grab the viewer in the first moments?",
+        roi_weights={"attention": 0.60, "visual": 0.40},
+        brain_regions=["FEF", "intraparietal sulcus", "superior parietal", "V1-V4", "MT/MST"],
+        color="#FF6B6B",
+    ),
+    PillarDef(
+        key="emotion",
+        label="Emotional Resonance",
+        description="Depth of emotional arousal — does the ad make the viewer feel something?",
+        roi_weights={"emotion": 1.0},
+        brain_regions=["amygdala-adjacent cortex", "insula", "OFC", "anterior cingulate"],
+        color="#4ECDC4",
+    ),
+    PillarDef(
+        key="persuasion",
+        label="Persuasion",
+        description="Message processing and rational buy-in — is the argument landing?",
+        roi_weights={"language": 0.70, "attention": 0.30},
+        brain_regions=["Broca (44/45)", "Wernicke", "superior temporal sulcus", "dorsal attention"],
+        color="#45B7D1",
+    ),
+    PillarDef(
+        key="memory",
+        label="Memory Encoding",
+        description="Likelihood the ad will be remembered — hippocampal and DMN memory hubs.",
+        roi_weights={"dmn": 0.60, "emotion": 0.40},
+        brain_regions=["hippocampal cortex", "PCC", "angular gyrus", "mPFC"],
+        color="#96CEB4",
+    ),
+    PillarDef(
+        key="sensory",
+        label="Sensory Impact",
+        description="Raw visual and auditory processing quality — production value signal.",
+        roi_weights={"visual": 0.80, "attention": 0.20},
+        brain_regions=["V1-V4", "MT/MST", "auditory cortex"],
+        color="#FFEAA7",
+    ),
+    PillarDef(
+        key="engagement",
+        label="Personal Engagement",
+        description="Self-referential processing — does the viewer feel 'this is about me'?",
+        roi_weights={"dmn": 0.50, "language": 0.30, "emotion": 0.20},
+        brain_regions=["mPFC", "TPJ", "precuneus", "anterior cingulate"],
+        color="#DDA0DD",
+    ),
+]
+
+PILLARS_BY_KEY: Dict[str, PillarDef] = {p.key: p for p in PILLAR_DEFS}
+
+
 @dataclass
 class ROIConfig:
     """Container for all ROI configuration.  Pass this around instead of
