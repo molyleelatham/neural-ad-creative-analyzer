@@ -46,6 +46,15 @@ def _resolve_model_name() -> str | None:
     return None
 
 
+def _demo_mode_enabled() -> bool:
+    return (os.environ.get("ARCA_NARRATIVE_DEMO_MODE") or "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 async def enrich_comparison_narrative(
     *,
     objective_value: str,
@@ -62,11 +71,16 @@ async def enrich_comparison_narrative(
     Returns None when no key, missing dependency, or the model run fails (caller keeps template copy).
     """
     if not _llm_credentials_present():
-        return None
+        # Allow a zero-cost demo path when quotas/billing are blocked.
+        if not _demo_mode_enabled():
+            return None
 
     model_name = _resolve_model_name()
     if not model_name:
-        return None
+        if _demo_mode_enabled():
+            model_name = "test"
+        else:
+            return None
 
     try:
         from pydantic_ai import Agent
@@ -94,6 +108,11 @@ async def enrich_comparison_narrative(
     }
 
     try:
+        # Demo mode: use Pydantic AI's offline test model (no external calls).
+        if _demo_mode_enabled():
+            from pydantic_ai.models.test import TestModel
+
+            agent = agent.override(model=TestModel())
         # IMPORTANT: FastAPI runs inside an event loop; using run_sync here will raise
         # "RuntimeError: This event loop is already running". Use the async runner instead.
         result = await agent.run(

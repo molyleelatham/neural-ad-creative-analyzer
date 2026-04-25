@@ -1,6 +1,7 @@
 from backend.agents.attribution_agent import scores_from_neural
 from backend.agents.neural_agent import mock_neural_features
 from backend.agents.pydantic_ai_narrative import enrich_comparison_narrative
+import os
 from backend.agents.segmentation_agent import mock_segments
 from backend.models.schemas import (
     AudienceSegment,
@@ -91,9 +92,21 @@ async def analyze_variants(
         overall_winner=overall_winner.variant_id,
         objective_winner=objective_winner.variant_id,
     )
+    narrative_source = "template"
+    narrative_model: str | None = None
     if narrative is not None:
         explanation = narrative.explanation
         recs = narrative.recommendations
+        narrative_source = "llm"
+        narrative_model = (os.environ.get("PYDANTIC_AI_MODEL") or "").strip() or None
+        if not narrative_model:
+            if (os.environ.get("ARCA_NARRATIVE_DEMO_MODE") or "").strip().lower() in {
+                "1",
+                "true",
+                "yes",
+                "on",
+            }:
+                narrative_model = "test"
 
     return ComparisonResult(
         objective=objective,
@@ -103,4 +116,6 @@ async def analyze_variants(
         objective_winner=objective_winner.variant_id,
         explanation=explanation,
         recommendations=recs,
+        narrative_source=narrative_source,
+        narrative_model=narrative_model,
     )

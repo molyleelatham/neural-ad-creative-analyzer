@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Literal
 
 from pydantic import BaseModel, Field
 
@@ -56,6 +57,8 @@ class ComparisonResult(BaseModel):
     objective_winner: str
     explanation: str
     recommendations: list[str]
+    narrative_source: Literal["template", "llm"] = "template"
+    narrative_model: str | None = None
 
 
 class HealthResponse(BaseModel):
