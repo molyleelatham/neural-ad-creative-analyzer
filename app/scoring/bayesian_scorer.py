@@ -62,12 +62,27 @@ class BayesianMarketingScorer:
         """ROI with highest activation at a single timestep."""
         return max(roi_t, key=roi_t.get)  # type: ignore[arg-type]
 
-    def _bayesian_update(self, prior: float, emotion: str) -> float:
-        """P(Convert | Emotion) = P(Emotion|Convert) * P(Convert) / P(Emotion)"""
-        likelihood = self.config.likelihoods[emotion]
-        marginal = self.config.marginals[emotion]
-        posterior = (likelihood * prior) / marginal
-        return float(np.clip(posterior, 0.001, 0.999))
+    def _conversion_signal(self, roi_t: Dict[str, float]) -> float:
+        """Compute an instantaneous conversion signal from ROI activations.
+
+        Instead of a binary "which ROI is dominant" Bayes update, we compute
+        a weighted evidence score that is sensitive to:
+          - *which* ROIs are active (via likelihood weights)
+          - *how strongly* they are active (via activation magnitude)
+          - *negative evidence* from DMN (mind-wandering = disengagement)
+
+        Returns a value in roughly [-1, +1] representing net evidence for
+        conversion at this timestep.
+        """
+        signal = 0.0
+        for roi, activation in roi_t.items():
+            weight = self.config.likelihoods[roi]
+            if roi == "dmn":
+                # DMN activation is negative evidence — viewer disengaged
+                signal -= weight * activation
+            else:
+                signal += weight * activation
+        return signal
 
     # ------------------------------------------------------------------
     # Public API
@@ -99,19 +114,40 @@ class BayesianMarketingScorer:
         T = pred_matrix.shape[0]
         roi_scores = self._extract_roi_scores(pred_matrix)
 
-        posteriors: List[float] = []
+        # ── Compute instantaneous conversion signals ──────────────
+        signals = np.zeros(T)
         emotions_seq: List[str] = []
-        prior = self.baseline_conversion_rate
 
         for t in range(T):
             roi_t = {roi: float(roi_scores[roi][t]) for roi in roi_scores}
             dominant = self._dominant_emotion(roi_t)
-            posterior = self._bayesian_update(prior, dominant)
-            posteriors.append(posterior)
             emotions_seq.append(dominant)
-            prior = posterior  # sequential update
+            signals[t] = self._conversion_signal(roi_t)
 
-        posteriors_arr = np.array(posteriors)
+        # ── Leaky integrator with decay ───────────────────────────
+        # Models attention as a resource that accumulates with strong
+        # signals but decays during weak moments.  This produces curves
+        # that actually reflect the content's temporal structure.
+        #
+        # decay_rate: how fast the signal fades (0.15 = 15% loss/step)
+        # gain:       scales raw signal into [0, 1] range
+        decay_rate = 0.15
+        gain = 2.5
+
+        accumulated = np.zeros(T)
+        state = 0.0
+        for t in range(T):
+            # Accumulate evidence with exponential decay
+            state = state * (1.0 - decay_rate) + gain * signals[t]
+            accumulated[t] = state
+
+        # ── Sigmoid transform → P(Convert) ───────────────────────
+        # Maps the accumulated signal to a probability via logistic
+        # function centered at 0, so negative accumulation → low P,
+        # strong positive → high P.
+        posteriors_arr = 1.0 / (1.0 + np.exp(-accumulated))
+        # Ensure we stay in (0.001, 0.999)
+        posteriors_arr = np.clip(posteriors_arr, 0.001, 0.999)
 
         # ── derived scores ────────────────────────────────────────────
         peak_score = float(np.max(posteriors_arr))
