@@ -1,5 +1,6 @@
 from backend.agents.attribution_agent import scores_from_neural
 from backend.agents.neural_agent import mock_neural_features
+from backend.agents.pydantic_ai_narrative import enrich_comparison_narrative
 from backend.agents.segmentation_agent import mock_segments
 from backend.models.schemas import (
     AudienceSegment,
@@ -40,7 +41,7 @@ def _build_summary(
     )
 
 
-def analyze_variants(
+async def analyze_variants(
     variant_inputs: list[tuple[str, str]],
     objective: CampaignObjective,
     audience_segment: AudienceSegment,
@@ -82,6 +83,17 @@ def analyze_variants(
         f"({_objective_score(objective_winner, objective):.1f}). "
         f"Best overall blend: {overall_winner.variant_id}."
     )
+
+    narrative = await enrich_comparison_narrative(
+        objective_value=objective.value,
+        audience_value=audience_segment.value,
+        variants_payload=[a.model_dump(mode="json") for a in analyses],
+        overall_winner=overall_winner.variant_id,
+        objective_winner=objective_winner.variant_id,
+    )
+    if narrative is not None:
+        explanation = narrative.explanation
+        recs = narrative.recommendations
 
     return ComparisonResult(
         objective=objective,
