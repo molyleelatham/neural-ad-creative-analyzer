@@ -25,6 +25,7 @@ from backend.services.compare_service import analyze_variants
 from backend.services.full_analysis_service import run_full_analysis
 from backend.services.tribev2_client import tribev2_health
 from backend.storage.uploads import save_upload
+from backend.database import DatabaseManager
 
 
 class _AppEnv(BaseSettings):
@@ -51,6 +52,9 @@ def _configure_logfire(application: FastAPI) -> None:
         return
 
 
+# Initialize database manager
+db_manager = DatabaseManager()
+
 app = FastAPI(
     title="Arcanalytics API",
     description=(
@@ -61,6 +65,27 @@ app = FastAPI(
     ),
     version="0.1.0",
 )
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database connection on startup"""
+    try:
+        await db_manager.initialize()
+        print("✅ Database connection initialized")
+    except Exception as e:
+        print(f"⚠️  Database connection failed: {e}")
+        print("   API will run without database persistence")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Close database connection on shutdown"""
+    try:
+        await db_manager.close()
+        print("✅ Database connection closed")
+    except Exception as e:
+        print(f"⚠️  Error closing database: {e}")
 
 import os as _os
 
@@ -137,6 +162,8 @@ async def analyze_full(
     TribeV2 brain scoring requires TRIBEV2_URL to be set in the environment.
     If TribeV2 is unreachable the response still contains full visual analysis
     plus a warning string in the `warnings` field.
+    
+    Results are saved to the database for historical tracking.
     """
     variant_inputs: list[tuple[str, str, str | None, bytes]] = []
     for index, upload in enumerate(files):
@@ -147,7 +174,115 @@ async def analyze_full(
         original = upload.filename or path.name
         variant_inputs.append((label, original, str(path), raw_bytes))
 
-    return await run_full_analysis(variant_inputs, objective, audience_segment)
+    # Run the analysis
+    result = await run_full_analysis(variant_inputs, objective, audience_segment)
+    
+    # Save results to database (non-blocking - don't fail the API call if DB is down)
+    try:
+        from backend.database import AnalysisCreate, VariantCreate, VisualScoreCreate, VisualSegmentCreate, BrainAnalysisCreate
+        
+        # Create analysis record
+        analysis_data = AnalysisCreate(
+            objective=objective.value,
+            audience_segment=audience_segment.value,
+            mode=len(files) == 2 and "compare" or "single",
+            metadata={"files": [v[1] for v in variant_inputs]}
+        )
+        
+        analysis_id = await db_manager.create_analysis(analysis_data)
+        
+        # Create variant records
+        for i, variant in enumerate(result.variants):
+            variant_data = VariantCreate(
+                analysis_id=analysis_id,
+                variant_label=variant.variant_label,
+                original_filename=variant_inputs[i][1],
+                file_path=variant_inputs[i][2],
+                file_size=len(variant_inputs[i][3])
+            )
+            variant_id = await db_manager.create_variant(variant_data)
+            
+            # Save visual scores
+            if variant.visual_scores:
+                score_data = VisualScoreCreate(
+                    variant_id=variant_id,
+                    purchase_score=variant.visual_scores.purchase_score,
+                    engagement_score=variant.visual_scores.engagement_score,
+                    virality_score=variant.visual_scores.virality_score,
+                    clarity_score=variant.visual_scores.clarity_score
+                )
+                await db_manager.create_visual_score(score_data)
+            
+            # Save visual segments
+            if variant.visual_segments:
+                for segment in variant.visual_segments:
+                    segment_data = VisualSegmentCreate(
+                        variant_id=variant_id,
+                        segment_type=segment.segment_type,
+                        description=segment.description,
+                        confidence_score=segment.confidence_score,
+                        bounding_box=segment.bounding_box
+                    )
+                    await db_manager.create_visual_segment(segment_data)
+            
+            # Save brain analysis if available
+            if variant.brain_analysis:
+                brain_data = BrainAnalysisCreate(
+                    variant_id=variant_id,
+                    purchase_score=variant.brain_analysis.purchase_score,
+                    engagement_score=variant.brain_analysis.engagement_score,
+                    virality_score=variant.brain_analysis.virality_score,
+                    clarity_score=variant.brain_analysis.clarity_score,
+                    neural_features=variant.brain_analysis.neural_features
+                )
+                await db_manager.create_brain_analysis(brain_data)
+        
+        print(f"✅ Analysis {analysis_id} saved to database")
+        
+    except Exception as e:
+        # Log error but don't fail the API response
+        print(f"⚠️  Failed to save analysis to database: {e}")
+        # Add warning to result if not already present
+        if not result.warnings:
+            result.warnings = []
+        result.warnings.append("Analysis completed but could not be saved to database")
+
+    return result
+
+
+@app.get("/analyses", response_model=list[dict])
+async def get_analyses(limit: int = 50, offset: int = 0):
+    """Get list of historical analyses"""
+    try:
+        analyses = await db_manager.get_analyses(limit=limit, offset=offset)
+        return analyses
+    except Exception as e:
+        print(f"⚠️  Failed to fetch analyses: {e}")
+        return []
+
+
+@app.get("/analyses/{analysis_id}", response_model=dict)
+async def get_analysis(analysis_id: int):
+    """Get detailed analysis by ID"""
+    try:
+        analysis = await db_manager.get_analysis_by_id(analysis_id)
+        if not analysis:
+            return {"error": "Analysis not found"}
+        return analysis
+    except Exception as e:
+        print(f"⚠️  Failed to fetch analysis {analysis_id}: {e}")
+        return {"error": "Failed to fetch analysis"}
+
+
+@app.get("/stats")
+async def get_stats():
+    """Get usage statistics"""
+    try:
+        stats = await db_manager.get_usage_stats()
+        return stats
+    except Exception as e:
+        print(f"⚠️  Failed to fetch stats: {e}")
+        return {"error": "Failed to fetch stats"}
 
 
 _configure_logfire(app)
