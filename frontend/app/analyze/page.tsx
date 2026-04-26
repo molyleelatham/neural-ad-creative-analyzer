@@ -739,7 +739,7 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
               </span>
             </div>
             )
-          })}
+           })}
         </div>
 
         {/* Pillar Timeline */}
