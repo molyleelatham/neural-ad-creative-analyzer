@@ -22,23 +22,19 @@ class DatabaseConfig:
     
     def __init__(self):
         self.database_url = os.getenv("DATABASE_URL")
-        
+
         if not self.database_url:
-            print("❌ DATABASE_URL environment variable is not set")
-            print("🔧 Please set DATABASE_URL in your environment or .env file")
-            print("📝 Example: DATABASE_URL=postgresql://user:password@host:port/database")
-            raise ValueError("DATABASE_URL environment variable is required")
-        
+            print("⚠️  DATABASE_URL not set — database features disabled")
+            self.asyncpg_url = None
+            return
+
         # Validate the DSN format
         if not self.database_url.startswith(('postgresql://', 'postgres://')):
-            print(f"❌ Invalid DATABASE_URL format: {self.database_url[:20]}...")
-            print("🔧 DATABASE_URL must start with 'postgresql://' or 'postgres://'")
-            raise ValueError(f"Invalid DATABASE_URL format: {self.database_url}")
-        
+            print(f"⚠️  Invalid DATABASE_URL format — database features disabled")
+            self.asyncpg_url = None
+            return
+
         print(f"✅ DATABASE_URL loaded: {self.database_url.split('@')[0]}@***")
-        
-        # Use the database URL as-is for asyncpg
-        # Render provides: postgresql://user:password@host:port/database
         self.asyncpg_url = self.database_url
 
     @property
@@ -246,6 +242,8 @@ class DatabaseManager:
     
     async def initialize(self):
         """Initialize database connection pool"""
+        if not self.config.asyncpg_url:
+            return
         if not self._pool:
             try:
                 print("🔌 Initializing database connection pool...")
@@ -255,12 +253,7 @@ class DatabaseManager:
                 )
                 print("✅ Database connection pool initialized successfully")
             except Exception as e:
-                print(f"❌ Failed to initialize database connection: {e}")
-                print(f"🔧 DSN: {self.config.asyncpg_url.split('@')[0]}@***")
-                print("🔧 Please check:")
-                print("   - DATABASE_URL is correct")
-                print("   - Database server is running")
-                print("   - Network connectivity is available")
+                print(f"⚠️  Failed to initialize database connection: {e}")
                 raise
     
     async def close(self):
@@ -272,9 +265,10 @@ class DatabaseManager:
     @asynccontextmanager
     async def get_connection(self):
         """Get database connection from pool"""
+        if not self.config.asyncpg_url:
+            raise RuntimeError("Database not configured (DATABASE_URL not set)")
         if not self._pool:
             await self.initialize()
-        
         async with self._pool.acquire() as connection:
             yield connection
     
