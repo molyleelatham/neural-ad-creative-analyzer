@@ -25,12 +25,9 @@ class DatabaseConfig:
         if not self.database_url:
             raise ValueError("DATABASE_URL environment variable is required")
         
-        # Parse connection string for asyncpg
+        # Use the database URL as-is for asyncpg
         # Render provides: postgresql://user:password@host:port/database
-        if self.database_url.startswith("postgresql://"):
-            self.asyncpg_url = self.database_url.replace("postgresql://", "postgresql+asyncpg://")
-        else:
-            self.asyncpg_url = self.database_url
+        self.asyncpg_url = self.database_url
 
     @property
     def connection_params(self) -> Dict[str, Any]:
@@ -51,7 +48,7 @@ class DatabaseConfig:
 class OrganizationBase(BaseModel):
     name: str = Field(..., max_length=255)
     slug: str = Field(..., max_length=100)
-    plan_type: str = Field(default="free", regex="^(free|pro|enterprise)$")
+    plan_type: str = Field(default="free", pattern="^(free|pro|enterprise)$")
 
 class OrganizationCreate(OrganizationBase):
     pass
@@ -69,7 +66,7 @@ class Organization(OrganizationBase):
 class UserBase(BaseModel):
     email: str = Field(..., max_length=255)
     name: Optional[str] = None
-    role: str = Field(default="member", regex="^(owner|admin|member)$")
+    role: str = Field(default="member", pattern="^(owner|admin|member)$")
 
 class UserCreate(UserBase):
     organization_id: uuid.UUID
@@ -89,9 +86,9 @@ class User(UserBase):
 class CampaignBase(BaseModel):
     name: str = Field(..., max_length=255)
     description: Optional[str] = None
-    objective: str = Field(..., regex="^(purchase|engagement|virality|clarity)$")
-    audience_segment: str = Field(..., regex="^(budget_sensitive|social_proof_driven|viral_share_oriented|premium_brand_oriented)$")
-    status: str = Field(default="active", regex="^(draft|active|paused|completed)$")
+    objective: str = Field(..., pattern="^(purchase|engagement|virality|clarity)$")
+    audience_segment: str = Field(..., pattern="^(budget_sensitive|social_proof_driven|viral_share_oriented|premium_brand_oriented)$")
+    status: str = Field(default="active", pattern="^(draft|active|paused|completed)$")
 
 class CampaignCreate(CampaignBase):
     organization_id: uuid.UUID
@@ -107,9 +104,9 @@ class Campaign(CampaignBase):
         from_attributes = True
 
 class AnalysisBase(BaseModel):
-    mode: str = Field(..., regex="^(single|compare)$")
-    objective: str = Field(..., regex="^(purchase|engagement|virality|clarity)$")
-    audience_segment: str = Field(..., regex="^(budget_sensitive|social_proof_driven|viral_share_oriented|premium_brand_oriented)$")
+    mode: str = Field(..., pattern="^(single|compare)$")
+    objective: str = Field(..., pattern="^(purchase|engagement|virality|clarity)$")
+    audience_segment: str = Field(..., pattern="^(budget_sensitive|social_proof_driven|viral_share_oriented|premium_brand_oriented)$")
 
 class AnalysisCreate(AnalysisBase):
     campaign_id: Optional[uuid.UUID] = None
