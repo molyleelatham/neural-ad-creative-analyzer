@@ -323,6 +323,7 @@ export default function AnalyzePage() {
       const res = await fetch(`${BACKEND}/analyze-full`, { method: 'POST', body: fd });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const data = await res.json();
+      console.log('Analysis result:', data);
       setResult(data);
     } catch (e: any) {
       setError(e.message ?? 'Analysis failed');
@@ -483,6 +484,12 @@ export default function AnalyzePage() {
             {result?.mode === 'compare' && result.variants.length === 2 ? (
               <ComparisonSection result={result} fileA={fileA} fileB={fileB} />
             ) : (<>
+            {/* Debug: Show mode info */}
+            {result && (
+              <div style={{ padding: 10, background: 'yellow', marginBottom: 10 }}>
+                Debug: mode={result.mode}, variants={result.variants.length}
+              </div>
+            )}
             {/* Composite + scores */}
             <div style={{
               background: 'white', borderRadius: 20,
