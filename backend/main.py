@@ -179,7 +179,7 @@ async def analyze_full(
     
     # Save results to database (non-blocking - don't fail the API call if DB is down)
     try:
-        from backend.database import AnalysisCreate, VariantCreate, VisualScoreCreate, VisualSegmentCreate, BrainAnalysisCreate
+        from backend.database import AnalysisCreate, VariantCreate, VisualScoresCreate, VisualSegmentCreate, BrainAnalysisCreate
         
         # Create analysis record
         analysis_data = AnalysisCreate(
@@ -204,36 +204,37 @@ async def analyze_full(
             
             # Save visual scores
             if variant.visual_scores:
-                score_data = VisualScoreCreate(
+                score_data = VisualScoresCreate(
                     variant_id=variant_id,
                     purchase_score=variant.visual_scores.purchase_score,
                     engagement_score=variant.visual_scores.engagement_score,
                     virality_score=variant.visual_scores.virality_score,
                     clarity_score=variant.visual_scores.clarity_score
                 )
-                await db_manager.create_visual_score(score_data)
+                await db_manager.create_visual_scores(score_data)
             
             # Save visual segments
             if variant.visual_segments:
                 for segment in variant.visual_segments:
                     segment_data = VisualSegmentCreate(
                         variant_id=variant_id,
-                        segment_type=segment.segment_type,
-                        description=segment.description,
-                        confidence_score=segment.confidence_score,
-                        bounding_box=segment.bounding_box
+                        label=segment.segment_type,
+                        confidence=segment.confidence_score,
+                        visual_weight_pct=getattr(segment, 'visual_weight_pct', None),
+                        geometry=segment.bounding_box
                     )
-                    await db_manager.create_visual_segment(segment_data)
+                    await db_manager.create_visual_segments(segment_data)
             
             # Save brain analysis if available
             if variant.brain_analysis:
                 brain_data = BrainAnalysisCreate(
                     variant_id=variant_id,
-                    purchase_score=variant.brain_analysis.purchase_score,
-                    engagement_score=variant.brain_analysis.engagement_score,
-                    virality_score=variant.brain_analysis.virality_score,
-                    clarity_score=variant.brain_analysis.clarity_score,
-                    neural_features=variant.brain_analysis.neural_features
+                    composite_score=getattr(variant.brain_analysis, 'composite_score', None),
+                    peak_score=getattr(variant.brain_analysis, 'peak_score', None),
+                    peak_second=getattr(variant.brain_analysis, 'peak_second', None),
+                    sustained_score=getattr(variant.brain_analysis, 'sustained_score', None),
+                    dropoff_penalty=getattr(variant.brain_analysis, 'dropoff_penalty', None),
+                    dominant_emotion_overall=getattr(variant.brain_analysis, 'dominant_emotion_overall', None)
                 )
                 await db_manager.create_brain_analysis(brain_data)
         

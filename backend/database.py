@@ -180,6 +180,47 @@ class VisualScores(VisualScoresBase):
     class Config:
         from_attributes = True
 
+class VisualSegmentBase(BaseModel):
+    label: str = Field(..., max_length=255)  # Changed from segment_type to label
+    confidence: Optional[float] = Field(None, ge=0, le=1)  # Changed from confidence_score
+    visual_weight_pct: Optional[float] = Field(None, ge=0, le=100)
+    geometry: Optional[Dict[str, Any]] = None  # Changed from bounding_box
+
+class VisualSegmentCreate(VisualSegmentBase):
+    variant_id: uuid.UUID
+
+class VisualSegment(VisualSegmentBase):
+    id: uuid.UUID
+    variant_id: uuid.UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class BrainAnalysisBase(BaseModel):
+    composite_score: Optional[float] = Field(None, ge=0, le=100)
+    peak_score: Optional[float] = Field(None, ge=0, le=100)
+    peak_second: Optional[float] = Field(None, ge=0)
+    sustained_score: Optional[float] = Field(None, ge=0, le=100)
+    dropoff_penalty: Optional[float] = Field(None, ge=0)
+    dominant_emotion_overall: Optional[str] = None
+    roi_emotion: Optional[float] = None
+    roi_language: Optional[float] = None
+    roi_attention: Optional[float] = None
+    roi_visual: Optional[float] = None
+    roi_dmn: Optional[float] = None
+
+class BrainAnalysisCreate(BrainAnalysisBase):
+    variant_id: uuid.UUID
+
+class BrainAnalysis(BrainAnalysisBase):
+    id: uuid.UUID
+    variant_id: uuid.UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
 # ============================================================================
 # DATABASE MANAGER
 # ============================================================================
@@ -407,6 +448,34 @@ class DatabaseManager:
                   scores_data.emotional_intensity, scores_data.memory_encoding, scores_data.p_convert_peak)
             
             return VisualScores(**record)
+    
+    async def create_visual_segments(self, segment_data: VisualSegmentCreate) -> VisualSegment:
+        """Create visual segments for a variant"""
+        async with self.get_connection() as conn:
+            record = await conn.fetchrow("""
+                INSERT INTO visual_segments (variant_id, label, confidence, visual_weight_pct, geometry)
+                VALUES ($1, $2, $3, $4, $5)
+                RETURNING *
+            """, segment_data.variant_id, segment_data.segment_type, segment_data.confidence_score,
+                  segment_data.visual_weight_pct, segment_data.bounding_box)
+            
+            return VisualSegment(**record)
+    
+    async def create_brain_analysis(self, brain_data: BrainAnalysisCreate) -> BrainAnalysis:
+        """Create brain analysis for a variant"""
+        async with self.get_connection() as conn:
+            record = await conn.fetchrow("""
+                INSERT INTO brain_analysis (variant_id, composite_score, peak_score, peak_second, 
+                                          sustained_score, dropoff_penalty, dominant_emotion_overall,
+                                          roi_emotion, roi_language, roi_attention, roi_visual, roi_dmn)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+                RETURNING *
+            """, brain_data.variant_id, brain_data.composite_score, brain_data.peak_score,
+                  brain_data.peak_second, brain_data.sustained_score, brain_data.dropoff_penalty,
+                  brain_data.dominant_emotion_overall, brain_data.roi_emotion, brain_data.roi_language,
+                  brain_data.roi_attention, brain_data.roi_visual, brain_data.roi_dmn)
+            
+            return BrainAnalysis(**record)
     
     # ============================================================================
     # ANALYTICS & REPORTING
