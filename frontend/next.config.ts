@@ -1,10 +1,16 @@
 import type { NextConfig } from "next";
 
+const backendUrl =
+  process.env.NEXT_PUBLIC_BACKEND_URL ??
+  (process.env.NODE_ENV === "production"
+    ? "https://arcanalytics-3np8.onrender.com"
+    : "http://localhost:8000");
+
 const nextConfig: NextConfig = {
-  // Allow the frontend to talk to the local FastAPI backend in development.
-  // In production set NEXT_PUBLIC_BACKEND_URL to your deployed backend URL.
+  // Proxy all /api/* requests to the FastAPI backend.
+  // This avoids CORS issues — the browser talks to the Next.js server,
+  // which forwards to FastAPI server-side.
   async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
     return [
       {
         source: "/api/:path*",

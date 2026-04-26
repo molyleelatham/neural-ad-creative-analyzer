@@ -139,7 +139,9 @@ type FullAnalysisResult = {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:8000";
+// All requests go through the Next.js rewrite proxy (/api/* → FastAPI backend).
+// This avoids CORS issues in production. See next.config.ts for the backend URL.
+const BACKEND = "/api";
 
 function clamp(n: number, lo: number, hi: number) {
   return Math.max(lo, Math.min(hi, n));
