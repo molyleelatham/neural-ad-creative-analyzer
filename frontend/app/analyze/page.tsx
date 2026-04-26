@@ -613,7 +613,15 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
   // Get real data from backend
   const pillars = brainData?.pillars || [];
   const brainRegions = brainData?.brain?.regions || [];
-  const timeline = brainData?.pillar_timeline || [];
+  const timeline = (brainData?.pillar_timeline || []).map(item => ({
+    second: item.second,
+    posterior_P_convert: item.hook,
+    roi_attention: item.engagement,
+    roi_emotion: item.emotion,
+    roi_language: item.memory,
+    roi_visual: item.sensory,
+    roi_dmn: item.persuasion
+  }));
   const adScores = brainData?.ad;
   const baselineComparison = brainData?.vs_baseline;
   
@@ -701,45 +709,45 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
           <div style={{ fontSize: 11, color: 'var(--v3-ink-2)', marginBottom: 16 }}>
             Mean activation across key brain regions
           </div>
-          {brainRegions.length > 0 ? brainRegions.map((region, i) => {
+          {brainRegions.length > 0 && brainRegions.map((region, i) => {
             const system = getBrainSystem(region.roi);
             const systemColor = getSystemColor(system);
             return (
-            <div key={i} style={{ 
-              display: 'grid', 
-              gridTemplateColumns: '140px 1fr 40px 40px', 
-              alignItems: 'center', 
-              padding: '6px 0', 
-              gap: 12,
-              borderBottom: i < brainRegions.length - 1 ? '1px solid oklch(0.96 0.005 90)' : 'none'
-            }}>
-              <div>
-                <div style={{ fontSize: 12, color: 'var(--v3-ink)', fontWeight: 500 }}>
-                  {region.label}
+              <div key={i} style={{ 
+                display: 'grid', 
+                gridTemplateColumns: '140px 1fr 40px 40px', 
+                alignItems: 'center', 
+                padding: '6px 0', 
+                gap: 12,
+                borderBottom: i < brainRegions.length - 1 ? '1px solid oklch(0.96 0.005 90)' : 'none'
+              }}>
+                <div>
+                  <div style={{ fontSize: 12, color: 'var(--v3-ink)', fontWeight: 500 }}>
+                    {region.label}
+                  </div>
+                  <div style={{ 
+                    fontSize: 9, 
+                    color: systemColor,
+                    fontWeight: 600
+                  }}>
+                    {system}
+                  </div>
                 </div>
-                <div style={{ 
-                  fontSize: 9, 
-                  color: systemColor,
-                  fontWeight: 600
-                }}>
-                  {system}
+                <div style={{ height: 4, background: 'oklch(0.95 0.005 90)', borderRadius: 999, overflow: 'hidden' }}>
+                  <div style={{
+                    width: `${Math.min(100, (region.mean_activation / 0.15) * 100)}%`, height: '100%',
+                    background: systemColor, borderRadius: 999,
+                  }} />
                 </div>
+                <span className="mono" style={{ fontSize: 10, fontWeight: 600, textAlign: 'right', color: 'var(--v3-ink)' }}>
+                  {region.mean_activation.toFixed(3)}
+                </span>
+                <span className="mono" style={{ fontSize: 10, textAlign: 'right', color: 'var(--v3-ink-3)' }}>
+                  {region.peak_second.toFixed(1)}s
+                </span>
               </div>
-              <div style={{ height: 4, background: 'oklch(0.95 0.005 90)', borderRadius: 999, overflow: 'hidden' }}>
-                <div style={{
-                  width: `${Math.min(100, (region.mean_activation / 0.15) * 100)}%`, height: '100%',
-                  background: systemColor, borderRadius: 999,
-                }} />
-              </div>
-              <span className="mono" style={{ fontSize: 10, fontWeight: 600, textAlign: 'right', color: 'var(--v3-ink)' }}>
-                {region.mean_activation.toFixed(3)}
-              </span>
-              <span className="mono" style={{ fontSize: 10, textAlign: 'right', color: 'var(--v3-ink-3)' }}>
-                {region.peak_second.toFixed(1)}s
-              </span>
-            </div>
-            )
-           })}
+            );
+          })}
         </div>
 
         {/* Pillar Timeline */}
