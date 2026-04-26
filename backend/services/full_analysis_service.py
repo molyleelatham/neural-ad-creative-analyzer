@@ -16,26 +16,26 @@ import logging
 import os
 from typing import Any
 
-from backend.agents.attribution_agent import scores_from_neural
-from backend.agents.neural_agent import mock_neural_features
-from backend.agents.pydantic_ai_narrative import enrich_comparison_narrative
-from backend.agents.sam3_agent import (
+from agents.attribution_agent import scores_from_neural
+from agents.neural_agent import mock_neural_features
+from agents.pydantic_ai_narrative import enrich_comparison_narrative
+from agents.sam3_agent import (
     sam3_raw_for_file,
     sam3_segments_for_file,
 )
-from backend.agents.segmentation_agent import mock_segments
-from backend.models.merged_schemas import (
+from agents.segmentation_agent import mock_segments
+from models.merged_schemas import (
     AnalyzeResponse,
     CompareResponse,
     FullAnalysisResult,
     FullVariantResult,
 )
-from backend.models.schemas import (
+from models.schemas import (
     AudienceSegment,
     CampaignObjective,
     VariantAnalysis,
 )
-from backend.services.compare_service import (
+from services.compare_service import (
     _build_summary,
     _build_recommendations,
     _compute_pillar_breakdown,
@@ -45,7 +45,7 @@ from backend.services.compare_service import (
     _overall_score,
     _variant_summary_from_metrics,
 )
-from backend.services.tribev2_client import (
+from services.tribev2_client import (
     modality_from_filename,
     tribev2_analyze_single,
     tribev2_compare,

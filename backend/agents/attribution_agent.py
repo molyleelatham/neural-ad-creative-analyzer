@@ -1,4 +1,4 @@
-from backend.models.schemas import NeuralFeatures, VariantScore
+from models.schemas import NeuralFeatures, VariantScore
 
 
 def scores_from_neural(features: NeuralFeatures) -> VariantScore:

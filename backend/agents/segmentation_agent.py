@@ -1,4 +1,4 @@
-from backend.models.schemas import AdSegment
+from models.schemas import AdSegment
 
 
 def mock_segments() -> list[AdSegment]:

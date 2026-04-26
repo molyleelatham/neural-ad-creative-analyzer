@@ -1,13 +1,13 @@
-from backend.agents.attribution_agent import scores_from_neural
-from backend.agents.neural_agent import mock_neural_features
-from backend.agents.pydantic_ai_narrative import enrich_comparison_narrative
+from agents.attribution_agent import scores_from_neural
+from agents.neural_agent import mock_neural_features
+from agents.pydantic_ai_narrative import enrich_comparison_narrative
 import os
-from backend.agents.segmentation_agent import mock_segments
+from agents.segmentation_agent import mock_segments
 import csv
 from pathlib import Path
 
-from backend.agents.sam3_agent import sam3_raw_for_file, sam3_segments_for_file
-from backend.models.schemas import (
+from agents.sam3_agent import sam3_raw_for_file, sam3_segments_for_file
+from models.schemas import (
     AudienceSegment,
     CampaignObjective,
     ComparisonResult,

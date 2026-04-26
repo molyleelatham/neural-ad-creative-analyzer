@@ -1,6 +1,6 @@
 import hashlib
 
-from backend.models.schemas import NeuralFeatures
+from models.schemas import NeuralFeatures
 
 
 def _byte_to_unit_interval(b: int) -> float:

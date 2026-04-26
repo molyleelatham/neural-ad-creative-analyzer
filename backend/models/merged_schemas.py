@@ -10,7 +10,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from backend.models.schemas import (
+from models.schemas import (
     AudienceSegment,
     CampaignObjective,
     VariantAnalysis,

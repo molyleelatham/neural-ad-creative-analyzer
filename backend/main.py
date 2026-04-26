@@ -14,18 +14,18 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from fastapi.middleware.cors import CORSMiddleware
 
-from backend.models.schemas import (
+from models.schemas import (
     AudienceSegment,
     CampaignObjective,
     ComparisonResult,
     HealthResponse,
 )
-from backend.models.merged_schemas import FullAnalysisResult
-from backend.services.compare_service import analyze_variants
-from backend.services.full_analysis_service import run_full_analysis
-from backend.services.tribev2_client import tribev2_health
-from backend.storage.uploads import save_upload
-from backend.database import DatabaseManager
+from models.merged_schemas import FullAnalysisResult
+from services.compare_service import analyze_variants
+from services.full_analysis_service import run_full_analysis
+from services.tribev2_client import tribev2_health
+from storage.uploads import save_upload
+from database import DatabaseManager
 
 
 class _AppEnv(BaseSettings):
@@ -179,7 +179,7 @@ async def analyze_full(
     
     # Save results to database (non-blocking - don't fail the API call if DB is down)
     try:
-        from backend.database import AnalysisCreate, VariantCreate, VisualScoresCreate, VisualSegmentCreate, BrainAnalysisCreate
+        from database import AnalysisCreate, VariantCreate, VisualScoresCreate, VisualSegmentCreate, BrainAnalysisCreate
         
         # Create analysis record
         analysis_data = AnalysisCreate(
@@ -287,3 +287,7 @@ async def get_stats():
 
 
 _configure_logfire(app)
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1053,6 +1053,7 @@ function ComparisonSection({ result, fileA, fileB }: {
 
 // ── Vision tab ──────────────────────────────────────────────────────────────
 function VisionTab({ result }: { result: AnalysisResult | null }) {
+  const objective = result?.variants?.[0]?.visual?.objective || 'purchase';
   const segs = result?.variants?.[0]?.visual.segments ?? [
     { label: 'Person / face', confidence: 0.94, visual_weight_pct: 38, pillar: 'Attention' },
     { label: 'Headline text', confidence: 0.91, visual_weight_pct: 22, pillar: 'Clarity' },
@@ -1060,47 +1061,149 @@ function VisionTab({ result }: { result: AnalysisResult | null }) {
     { label: 'Product',        confidence: 0.82, visual_weight_pct: 13, pillar: 'Trust' },
     { label: 'Brand logo',     confidence: 0.76, visual_weight_pct: 8,  pillar: 'Trust' },
     { label: 'Background',     confidence: 0.99, visual_weight_pct: 5,  pillar: 'Emotion' },
+    { label: 'Price/offer',    confidence: 0.65, visual_weight_pct: 3,  pillar: 'Value' },
   ];
   const pillars = result?.variants?.[0]?.brain_single?.pillars ?? [];
+
+  // Goal-specific insights and element importance
+  const getGoalSpecificInsights = () => {
+    switch (objective) {
+      case 'purchase':
+        return {
+          title: 'Purchase-focused elements',
+          importantElements: ['Product', 'Price/offer', 'Call to action', 'Brand logo'],
+          insights: [
+            'Product visibility drives conversion intent',
+            'Clear pricing reduces purchase friction',
+            'Strong CTA placement crucial for action',
+            'Trust elements (brand, quality) essential'
+          ],
+          keyFinding: 'Product and pricing elements need prominence for purchase conversion. Current visual weight may be insufficient for optimal conversion.'
+        };
+      case 'engagement':
+        return {
+          title: 'Engagement-focused elements',
+          importantElements: ['Person / face', 'Product', 'Brand logo', 'Background'],
+          insights: [
+            'Human faces increase emotional connection',
+            'Product storytelling drives interest',
+            'Brand recognition builds familiarity',
+            'Visual context enhances engagement'
+          ],
+          keyFinding: 'Face and product elements are performing well for engagement. Consider optimizing emotional triggers.'
+        };
+      case 'virality':
+        return {
+          title: 'Virality-focused elements',
+          importantElements: ['Person / face', 'Background', 'Product', 'Brand logo'],
+          insights: [
+            'Shareable emotional moments key',
+            'Unexpected elements boost talkability',
+            'Brand memorability essential for shares',
+            'Visual contrast stops the scroll'
+          ],
+          keyFinding: 'Strong emotional elements present. Consider amplifying unique visual moments for shareability.'
+        };
+      case 'clarity':
+        return {
+          title: 'Clarity-focused elements',
+          importantElements: ['Headline text', 'Product', 'Call to action', 'Brand logo'],
+          insights: [
+            'Clear headline communicates value instantly',
+            'Product recognition aids understanding',
+            'CTA clarity drives desired action',
+            'Brand consistency builds trust'
+          ],
+          keyFinding: 'Text elements need enhancement for better message comprehension. Consider increasing visual weight of key messaging.'
+        };
+      default:
+        return {
+          title: 'General performance elements',
+          importantElements: ['Product', 'Person / face', 'Call to action'],
+          insights: ['Balanced approach recommended'],
+          keyFinding: 'Focus on balancing key elements for overall performance.'
+        };
+    }
+  };
+
+  const goalInsights = getGoalSpecificInsights();
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 24 }}>
       <div style={card()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
           <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 24, fontWeight: 400, margin: 0 }}>Visual elements</h3>
-          {segs.length > 0 && (
-            <span style={{ fontSize: 11, fontWeight: 500, color: ACCENT, background: 'oklch(0.96 0.04 180)', padding: '4px 10px', borderRadius: 999 }}>
-              {segs.length} detected
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            {segs.length > 0 && (
+              <span style={{ fontSize: 11, fontWeight: 500, color: ACCENT, background: 'oklch(0.96 0.04 180)', padding: '4px 10px', borderRadius: 999 }}>
+                {segs.length} detected
+              </span>
+            )}
+            <span style={{ fontSize: 10, color: 'var(--v3-ink-3)', background: 'oklch(0.985 0.003 90)', padding: '3px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {objective}
             </span>
-          )}
-        </div>
-        {segs.length > 0 ? segs.map((s, i) => (
-          <div key={i} style={{
-            display: 'grid', gridTemplateColumns: '1fr 1fr 90px',
-            alignItems: 'center', padding: '14px 0', gap: 16,
-            borderTop: '1px solid oklch(0.95 0.005 90)',
-          }}>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--v3-ink)' }}>{s.label}</div>
-              {s.pillar && <span className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', textTransform: 'uppercase' }}>{s.pillar}</span>}
-            </div>
-            <div style={{ height: 6, background: 'oklch(0.95 0.005 90)', borderRadius: 999, overflow: 'hidden' }}>
-              <div style={{
-                width: `${Math.min(100, s.visual_weight_pct * 2.5)}%`, height: '100%',
-                background: `linear-gradient(90deg, ${ACCENT}, oklch(0.65 0.13 200))`,
-                borderRadius: 999,
-              }} />
-            </div>
-            <div style={{ textAlign: 'right' }}>
-              <div style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 22, fontWeight: 400 }}>
-                {s.visual_weight_pct}<span style={{ fontSize: 12, color: 'var(--v3-ink-3)' }}>%</span>
-              </div>
-              <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)' }}>
-                conf {s.confidence.toFixed(2)}
-              </div>
-            </div>
           </div>
-        )) : (
+        </div>
+        {segs.length > 0 ? segs.map((s, i) => {
+          const isImportant = goalInsights.importantElements.some(el => 
+            s.label.toLowerCase().includes(el.toLowerCase())
+          );
+          const weightRounded = Math.round(s.visual_weight_pct);
+          const confidenceRounded = Math.round(s.confidence * 100);
+          
+          return (
+            <div key={i} style={{
+              display: 'grid', gridTemplateColumns: '1fr 1fr 90px',
+              alignItems: 'center', padding: '14px 0', gap: 16,
+              borderTop: '1px solid oklch(0.95 0.005 90)',
+              background: isImportant ? 'oklch(0.985 0.003 90)' : 'transparent',
+              borderLeft: isImportant ? `3px solid ${ACCENT}` : 'none',
+              paddingLeft: isImportant ? '13px' : '16px',
+            }}>
+              <div>
+                <div style={{ 
+                  fontSize: 14, 
+                  fontWeight: isImportant ? 600 : 500, 
+                  color: isImportant ? ACCENT : 'var(--v3-ink)',
+                  display: 'flex', alignItems: 'center', gap: 6
+                }}>
+                  {s.label}
+                  {isImportant && (
+                    <span style={{ 
+                      fontSize: 9, 
+                      background: ACCENT, 
+                      color: 'white', 
+                      padding: '2px 5px', 
+                      borderRadius: 999,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em'
+                    }}>
+                      Key
+                    </span>
+                  )}
+                </div>
+                {s.pillar && <span className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', textTransform: 'uppercase' }}>{s.pillar}</span>}
+              </div>
+              <div style={{ height: 6, background: 'oklch(0.95 0.005 90)', borderRadius: 999, overflow: 'hidden' }}>
+                <div style={{
+                  width: `${Math.min(100, weightRounded * 2.5)}%`, height: '100%',
+                  background: isImportant 
+                    ? `linear-gradient(90deg, ${ACCENT}, oklch(0.65 0.13 200))`
+                    : `linear-gradient(90deg, oklch(0.75 0.005 90), oklch(0.65 0.13 200))`,
+                  borderRadius: 999,
+                }} />
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 22, fontWeight: isImportant ? 600 : 400 }}>
+                  {weightRounded}<span style={{ fontSize: 12, color: 'var(--v3-ink-3)' }}>%</span>
+                </div>
+                <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)' }}>
+                  {confidenceRounded}% conf
+                </div>
+              </div>
+            </div>
+          );
+        }) : (
           <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--v3-ink-3)', fontSize: 13 }}>
             No segment data returned
           </div>
@@ -1108,6 +1211,52 @@ function VisionTab({ result }: { result: AnalysisResult | null }) {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Goal-specific insights */}
+        <div style={{
+          ...card(),
+          background: `linear-gradient(135deg, oklch(0.96 0.04 180), white)`,
+          border: '1px solid oklch(0.9 0.04 180)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <span style={{
+              width: 24, height: 24, borderRadius: 6,
+              background: 'white', border: `1px solid oklch(0.9 0.04 180)`,
+              display: 'grid', placeItems: 'center', color: ACCENT, fontSize: 12,
+            }}>🎯</span>
+            <div>
+              <span className="mono" style={{ fontSize: 10, color: ACCENT, fontWeight: 600, letterSpacing: '0.1em' }}>GOAL FOCUS</span>
+              <div style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>{goalInsights.title}</div>
+            </div>
+          </div>
+          
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--v3-ink)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Key Elements for {objective}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {goalInsights.importantElements.map((el, i) => (
+                <span key={i} style={{
+                  fontSize: 10, background: 'white', padding: '3px 8px', borderRadius: 999,
+                  border: '1px solid oklch(0.9 0.04 180)', color: ACCENT, fontWeight: 500
+                }}>
+                  {el}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          <div className="mono" style={{ fontSize: 9, color: 'var(--v3-ink-3)', marginBottom: 8 }}>STRATEGY INSIGHTS</div>
+          {goalInsights.insights.map((insight, i) => (
+            <div key={i} style={{ 
+              display: 'flex', gap: 8, marginBottom: 6,
+              fontSize: 11, color: 'var(--v3-ink-2)', lineHeight: 1.4
+            }}>
+              <span style={{ color: ACCENT, fontWeight: 600, minWidth: 12 }}>{i + 1}.</span>
+              <span>{insight}</span>
+            </div>
+          ))}
+        </div>
+
         {pillars.length > 0 && (
           <div style={card()}>
             <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 18, fontWeight: 500, margin: '0 0 16px' }}>Pillar scores</h3>
@@ -1141,7 +1290,7 @@ function VisionTab({ result }: { result: AnalysisResult | null }) {
             <span className="mono" style={{ fontSize: 10, color: ACCENT, fontWeight: 600, letterSpacing: '0.1em' }}>KEY FINDING</span>
           </div>
           <p style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 17, lineHeight: 1.45, margin: 0, color: 'var(--v3-ink)' }}>
-            Face dominates 38% of visual weight — strong attention. CTA only 14%; raise contrast to recover ~8 clarity points.
+            {goalInsights.keyFinding}
           </p>
         </div>
       </div>

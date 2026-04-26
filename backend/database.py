@@ -22,8 +22,20 @@ class DatabaseConfig:
     
     def __init__(self):
         self.database_url = os.getenv("DATABASE_URL")
+        
         if not self.database_url:
+            print("❌ DATABASE_URL environment variable is not set")
+            print("🔧 Please set DATABASE_URL in your environment or .env file")
+            print("📝 Example: DATABASE_URL=postgresql://user:password@host:port/database")
             raise ValueError("DATABASE_URL environment variable is required")
+        
+        # Validate the DSN format
+        if not self.database_url.startswith(('postgresql://', 'postgres://')):
+            print(f"❌ Invalid DATABASE_URL format: {self.database_url[:20]}...")
+            print("🔧 DATABASE_URL must start with 'postgresql://' or 'postgres://'")
+            raise ValueError(f"Invalid DATABASE_URL format: {self.database_url}")
+        
+        print(f"✅ DATABASE_URL loaded: {self.database_url.split('@')[0]}@***")
         
         # Use the database URL as-is for asyncpg
         # Render provides: postgresql://user:password@host:port/database
@@ -235,10 +247,21 @@ class DatabaseManager:
     async def initialize(self):
         """Initialize database connection pool"""
         if not self._pool:
-            self._pool = await asyncpg.create_pool(
-                self.config.asyncpg_url,
-                **self.config.connection_params
-            )
+            try:
+                print("🔌 Initializing database connection pool...")
+                self._pool = await asyncpg.create_pool(
+                    self.config.asyncpg_url,
+                    **self.config.connection_params
+                )
+                print("✅ Database connection pool initialized successfully")
+            except Exception as e:
+                print(f"❌ Failed to initialize database connection: {e}")
+                print(f"🔧 DSN: {self.config.asyncpg_url.split('@')[0]}@***")
+                print("🔧 Please check:")
+                print("   - DATABASE_URL is correct")
+                print("   - Database server is running")
+                print("   - Network connectivity is available")
+                raise
     
     async def close(self):
         """Close database connection pool"""
