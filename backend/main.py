@@ -26,12 +26,6 @@ try:
         CampaignObjective,
         ComparisonResult,
         HealthResponse,
-        ImageAnalysisRequest,
-        ImageAnalysisResponse,
-        NeuralPredictorRequest,
-        NeuralPredictorResponse,
-        Segment,
-        Variant,
     )
     from models.merged_schemas import FullAnalysisResult
 except ImportError:
@@ -41,12 +35,6 @@ except ImportError:
         CampaignObjective,
         ComparisonResult,
         HealthResponse,
-        ImageAnalysisRequest,
-        ImageAnalysisResponse,
-        NeuralPredictorRequest,
-        NeuralPredictorResponse,
-        Segment,
-        Variant,
     )
     from .models.merged_schemas import FullAnalysisResult
 from services.compare_service import analyze_variants
@@ -232,7 +220,7 @@ async def analyze_full(
             variant_id = await db_manager.create_variant(variant_data)
             
             # Save visual scores
-            if variant.visual?.scores:
+            if hasattr(variant, 'visual') and variant.visual and hasattr(variant.visual, 'scores') and variant.visual.scores:
                 score_data = VisualScoresCreate(
                     variant_id=variant_id,
                     purchase_score=variant.visual.scores.purchase,
@@ -243,7 +231,7 @@ async def analyze_full(
                 await db_manager.create_visual_scores(score_data)
             
             # Save visual segments
-            if variant.visual?.segments:
+            if hasattr(variant, 'visual') and variant.visual and hasattr(variant.visual, 'segments') and variant.visual.segments:
                 for segment in variant.visual.segments:
                     segment_data = VisualSegmentCreate(
                         variant_id=variant_id,
