@@ -48,9 +48,9 @@ export default function Home() {
                   <span className="gradient-text"> Customers Really See</span>
                 </h1>
                 <p className="text-xl text-gray-600 leading-relaxed">
-                  Arcanalytics combines computer vision with neural data analysis to reveal 
-                  exactly what captures attention in your ads. Get actionable insights to 
-                  outperform your competition.
+                  Arcanalytics combines SAM3 computer vision with TribeV2 neural encoding to reveal 
+                  exactly what captures attention in your ads. Get actionable insights with 
+                  statistical confidence to optimize your creative performance.
                 </p>
               </div>
 
@@ -143,19 +143,19 @@ export default function Home() {
                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Face detection & emotion analysis
+                  SAM3-powered visual element detection
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Brand logo visibility scoring
+                  Visual weight & confidence scoring
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  CTA button effectiveness
+                  Pillar-based performance analysis
                 </li>
               </ul>
             </div>
@@ -177,19 +177,19 @@ export default function Home() {
                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Attention heat mapping
+                  TribeV2 ROI activation mapping
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Emotional response analysis
+                  P(Convert) timeline analysis
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Memory retention scoring
+                  Neurological pillar scoring
                 </li>
               </ul>
             </div>
@@ -211,19 +211,19 @@ export default function Home() {
                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Multi-variant comparison
+                  Head-to-head A/B testing
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Bayesian statistical analysis
+                  Confidence interval analysis
                 </li>
                 <li className="flex items-center gap-2">
                   <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  Actionable improvement tips
+                  AI-powered recommendations
                 </li>
               </ul>
             </div>
@@ -260,7 +260,7 @@ export default function Home() {
               </div>
               <h3 className="text-xl font-semibold text-gray-900 mb-3">AI Analysis</h3>
               <p className="text-gray-600">
-                Our computer vision and neural processing systems analyze every element of your ad.
+                SAM3 segments visual elements while TribeV2 encodes neural responses for comprehensive analysis.
               </p>
             </div>
 
