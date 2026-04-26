@@ -473,8 +473,8 @@ class DatabaseManager:
                 INSERT INTO visual_segments (variant_id, label, confidence, visual_weight_pct, geometry)
                 VALUES ($1, $2, $3, $4, $5)
                 RETURNING *
-            """, segment_data.variant_id, segment_data.segment_type, segment_data.confidence_score,
-                  segment_data.visual_weight_pct, segment_data.bounding_box)
+            """, segment_data.variant_id, segment_data.label, segment_data.confidence,
+                  segment_data.visual_weight_pct, segment_data.geometry)
             
             return VisualSegment(**record)
     

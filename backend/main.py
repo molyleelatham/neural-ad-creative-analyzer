@@ -201,23 +201,24 @@ async def analyze_full(
         analysis_data = AnalysisCreate(
             objective=objective.value,
             audience_segment=audience_segment.value,
-            mode=len(files) == 2 and "compare" or "single",
+            mode="compare" if len(files) == 2 else "single",
             organization_id=uuid.UUID('12345678-1234-5678-9abc-123456789abc'),  # Default org ID
-            metadata={"files": [v[1] for v in variant_inputs]}
         )
-        
-        analysis_id = await db_manager.create_analysis(analysis_data)
-        
+
+        analysis_id = (await db_manager.create_analysis(analysis_data)).id
+
         # Create variant records
         for i, variant in enumerate(result.variants):
+            original_filename = variant_inputs[i][1]
             variant_data = VariantCreate(
                 analysis_id=analysis_id,
-                variant_label=variant.variant_label,
-                original_filename=variant_inputs[i][1],
-                file_path=variant_inputs[i][2],
-                file_size=len(variant_inputs[i][3])
+                variant_id=variant.variant_id,
+                filename=original_filename,
+                original_filename=original_filename,
+                storage_path=variant_inputs[i][2],
+                file_size_bytes=len(variant_inputs[i][3])
             )
-            variant_id = await db_manager.create_variant(variant_data)
+            variant_id = (await db_manager.create_variant(variant_data)).id
             
             # Save visual scores
             if hasattr(variant, 'visual') and variant.visual and hasattr(variant.visual, 'scores') and variant.visual.scores:
