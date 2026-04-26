@@ -4,6 +4,7 @@ import asyncio
 import csv
 import logging
 import os
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -13,6 +14,137 @@ from backend.models.schemas import AdSegment
 logger = logging.getLogger(__name__)
 
 _REMAP_CACHE: tuple[Path, dict[str, dict[str, Any]]] | None = None
+
+# ---------------------------------------------------------------------------
+# Video support constants
+# ---------------------------------------------------------------------------
+
+_VIDEO_EXTENSIONS: frozenset[str] = frozenset(
+    {".mp4", ".mov", ".avi", ".webm", ".mkv", ".m4v", ".flv"}
+)
+# How many evenly-spaced frames to sample from a video.
+# Override with the env var SAM3_VIDEO_MAX_FRAMES.
+_DEFAULT_VIDEO_MAX_FRAMES = 8
+
+
+def _is_video_file(path: Path) -> bool:
+    return path.suffix.lower() in _VIDEO_EXTENSIONS
+
+
+def _video_max_frames() -> int:
+    try:
+        return int(os.environ.get("SAM3_VIDEO_MAX_FRAMES") or _DEFAULT_VIDEO_MAX_FRAMES)
+    except (ValueError, TypeError):
+        return _DEFAULT_VIDEO_MAX_FRAMES
+
+
+def _extract_video_frames(video_path: Path, max_frames: int, dest_dir: Path) -> list[Path]:
+    """
+    Use OpenCV to extract up to ``max_frames`` evenly-spaced frames from a
+    video file, writing each as a JPEG into ``dest_dir``.
+
+    Returns a list of written frame paths (may be empty on error).
+    """
+    try:
+        import cv2  # type: ignore[import]
+    except ImportError:
+        logger.warning(
+            "opencv-python-headless is not installed — cannot extract video frames. "
+            "Add opencv-python-headless to requirements.txt"
+        )
+        return []
+
+    cap = cv2.VideoCapture(str(video_path))
+    if not cap.isOpened():
+        logger.warning("SAM3: cv2 could not open video %s", video_path.name)
+        return []
+
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    if total_frames <= 0:
+        # Some containers don't report frame count; fall back to sequential reads.
+        total_frames = max_frames * 30  # rough upper bound
+
+    # Pick evenly-spaced indices across the full duration.
+    n = min(max_frames, max(1, total_frames))
+    step = max(1, total_frames // n)
+    indices = [i * step for i in range(n)]
+
+    written: list[Path] = []
+    for idx in indices:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, idx)
+        ok, frame = cap.read()
+        if not ok:
+            continue
+        frame_path = dest_dir / f"frame_{idx:06d}.jpg"
+        cv2.imwrite(str(frame_path), frame)
+        written.append(frame_path)
+
+    cap.release()
+    logger.info(
+        "SAM3: extracted %d/%d frames from %s", len(written), n, video_path.name
+    )
+    return written
+
+
+def _merge_frame_segments(frame_results: list[list[AdSegment]]) -> list[AdSegment]:
+    """
+    Merge per-frame segment lists into a single consolidated list.
+
+    Strategy:
+    - Group by label across all frames.
+    - ``confidence`` = max over all frames (most-confident detection wins).
+    - ``visual_weight_pct`` = average over frames that saw the label
+      (represents how consistently prominent the element is throughout the video).
+    - ``reasoning`` updated to mention video + frame counts.
+    """
+    if not frame_results:
+        return []
+
+    total_frames = len(frame_results)
+    by_label: dict[str, dict[str, Any]] = {}
+
+    for frame_segs in frame_results:
+        for seg in frame_segs:
+            bucket = by_label.get(seg.label)
+            if bucket is None:
+                bucket = {
+                    "seg": seg,
+                    "max_conf": seg.confidence,
+                    "weight_sum": seg.visual_weight_pct,
+                    "frame_count": 1,
+                }
+                by_label[seg.label] = bucket
+            else:
+                bucket["max_conf"] = max(float(bucket["max_conf"]), seg.confidence)
+                bucket["weight_sum"] += seg.visual_weight_pct
+                bucket["frame_count"] += 1
+
+    merged: list[AdSegment] = []
+    for label, b in by_label.items():
+        base: AdSegment = b["seg"]
+        avg_weight = float(b["weight_sum"]) / total_frames
+        merged.append(
+            AdSegment(
+                label=base.label,
+                display_label=base.display_label,
+                pillar=base.pillar,
+                scoring_weight=base.scoring_weight,
+                confidence=float(b["max_conf"]),
+                visual_weight_pct=avg_weight,
+                reasoning=(
+                    f"SAM3 video analysis: detected in {b['frame_count']}/{total_frames} frames "
+                    f"(avg prominence {avg_weight:.1f}%, peak confidence {b['max_conf']:.2f})."
+                ),
+                geometry=base.geometry,
+            )
+        )
+
+    # Re-normalise weights to ~100.
+    total_w = sum(s.visual_weight_pct for s in merged) or 1.0
+    for seg in merged:
+        seg.visual_weight_pct = max(0.0, min((seg.visual_weight_pct / total_w) * 100.0, 100.0))
+
+    return sorted(merged, key=lambda s: s.visual_weight_pct, reverse=True)
 
 
 def _load_class_remap() -> dict[str, dict[str, Any]]:
@@ -314,10 +446,16 @@ def _extract_predictions(payload: Any) -> list[dict[str, Any]]:
         if depth <= 0:
             return None
         if isinstance(x, dict):
-            # Support both "predictions" and keys like "model.predictions".
             for k, v in x.items():
-                if _is_predictions_key(k) and isinstance(v, list):
-                    return [p for p in v if isinstance(p, dict)]
+                if _is_predictions_key(k):
+                    # Direct list (most common)
+                    if isinstance(v, list):
+                        return [p for p in v if isinstance(p, dict)]
+                    # Roboflow serverless wraps in {"image": ..., "predictions": [...]}
+                    if isinstance(v, dict) and "predictions" in v:
+                        inner = v["predictions"]
+                        if isinstance(inner, list):
+                            return [p for p in inner if isinstance(p, dict)]
             for v in x.values():
                 found = _walk(v, depth - 1)
                 if found is not None:
@@ -334,61 +472,42 @@ def _extract_predictions(payload: Any) -> list[dict[str, Any]]:
 
 def _run_workflow_sync(env: _Sam3Env, image_path: Path) -> Any:
     """
-    Call Roboflow Serverless workflow and return raw JSON.
+    Call Roboflow Serverless workflow via the inference-sdk client.
 
-    We build the request payload ourselves (base64 image encoding) so we can:
-    - guarantee the "InferenceImage" shape expected by the workflow runtime
-    - capture the full response body on failure (422/500)
+    Uses client.run_workflow() which handles the WorkflowImage serialisation
+    correctly for serverless endpoints (raw HTTP with base64 does not work).
     """
-    import requests
-    from inference_sdk.http.utils.loaders import load_static_inference_input
-    from inference_sdk.http.utils.request_building import inject_images_into_payload
+    import logfire
+    from inference_sdk import InferenceHTTPClient
 
-    url = f"{env.api_url.rstrip('/')}/{env.workspace}/workflows/{env.workflow_id}"
-    encoded_images = load_static_inference_input(str(image_path))
-    try:
-        first_len = len(encoded_images[0][0]) if encoded_images else 0
-    except Exception:
-        first_len = 0
-
-    candidate_keys = [env.image_key, "image", "input_image", "img", "input"]
-    last_resp: requests.Response | None = None
-    last_exc: Exception | None = None
-
-    for key in candidate_keys:
-        # First try the official "InferenceImage" shape (type/value).
-        payload: dict[str, Any] = {"api_key": env.api_key, "use_cache": True, "inputs": {}}
-        inject_images_into_payload(payload["inputs"], encoded_images, key=key)
-        logger.info("SAM3: http payload key=%s encoded_len=%s (type/value)", key, first_len)
+    with logfire.span(
+        "sam3.workflow_call",
+        workspace=env.workspace,
+        workflow_id=env.workflow_id,
+        image=image_path.name,
+    ):
+        client = InferenceHTTPClient(
+            api_url=env.api_url,
+            api_key=env.api_key,
+        )
+        logger.info(
+            "SAM3: run_workflow workspace=%s workflow=%s image=%s",
+            env.workspace, env.workflow_id, image_path.name,
+        )
         try:
-            resp = requests.post(url, json=payload, timeout=60)
-            last_resp = resp
-            if resp.ok:
-                return resp.json()
+            result = client.run_workflow(
+                workspace_name=env.workspace,
+                workflow_id=env.workflow_id,
+                images={env.image_key: str(image_path)},
+            )
+            logfire.info("sam3.workflow_success", image=image_path.name)
+            # run_workflow returns a list of result dicts (one per image)
+            if isinstance(result, list) and result:
+                return result[0]
+            return result
         except Exception as exc:
-            last_exc = exc
-
-        # Fallback: some workflows accept raw base64 string directly.
-        if encoded_images:
-            raw = encoded_images[0][0]
-            for raw_value in (raw, [raw]):
-                payload2: dict[str, Any] = {"api_key": env.api_key, "use_cache": True, "inputs": {key: raw_value}}
-                logger.info("SAM3: http payload key=%s encoded_len=%s (raw)", key, first_len)
-                try:
-                    resp = requests.post(url, json=payload2, timeout=60)
-                    last_resp = resp
-                    if resp.ok:
-                        return resp.json()
-                except Exception as exc:
-                    last_exc = exc
-        # keep trying other keys on 4xx/5xx
-
-    if last_resp is not None:
-        # Raise something that includes status + body for our caller's logging.
-        raise RuntimeError(f"Roboflow workflow failed status={last_resp.status_code} body={last_resp.text[:4000]}")
-    if last_exc is not None:
-        raise last_exc
-    raise RuntimeError("Roboflow workflow call failed (no response).")
+            logfire.warn("sam3.workflow_error", error=str(exc))
+            raise
 
 
 def _debug_direct_request(env: _Sam3Env, image_path: Path) -> tuple[int, str]:
@@ -401,6 +520,8 @@ async def sam3_segments_for_image(image_path: str | Path) -> list[AdSegment] | N
     Returns segments from the user's trained SAM3 workflow when configured.
     Returns None when not configured or when it fails (caller should fall back).
     """
+    import logfire
+
     env = _load_env()
     if env is None:
         return None
@@ -409,53 +530,60 @@ async def sam3_segments_for_image(image_path: str | Path) -> list[AdSegment] | N
     if not path.exists():
         return None
 
-    try:
-        logger.info(
-            "SAM3: running workflow=%s workspace=%s on %s",
-            env.workflow_id,
-            env.workspace,
-            path.name,
-        )
-        payload = await asyncio.to_thread(_run_workflow_sync, env, path)
-        preds = _extract_predictions(payload)
-        if not preds:
-            # Help debug mismatched workflow output schema.
-            if isinstance(payload, dict):
-                keys = sorted([str(k) for k in payload.keys()])[:25]
-                outputs = payload.get("outputs")
-                if isinstance(outputs, list) and outputs and isinstance(outputs[0], dict):
-                    out_keys = sorted([str(k) for k in outputs[0].keys()])[:25]
-                    logger.warning(
-                        "SAM3: no predictions found. top-level keys=%s outputs[0] keys=%s "
-                        "(workflow likely only outputs visuals; add 'predictions' output in Roboflow workflow)",
-                        keys,
-                        out_keys,
-                    )
+    with logfire.span("sam3.segments", image=path.name, workflow_id=env.workflow_id):
+        try:
+            logger.info(
+                "SAM3: running workflow=%s workspace=%s on %s",
+                env.workflow_id,
+                env.workspace,
+                path.name,
+            )
+            payload = await asyncio.to_thread(_run_workflow_sync, env, path)
+            preds = _extract_predictions(payload)
+            if not preds:
+                # Help debug mismatched workflow output schema.
+                if isinstance(payload, dict):
+                    keys = sorted([str(k) for k in payload.keys()])[:25]
+                    outputs = payload.get("outputs")
+                    if isinstance(outputs, list) and outputs and isinstance(outputs[0], dict):
+                        out_keys = sorted([str(k) for k in outputs[0].keys()])[:25]
+                        logger.warning(
+                            "SAM3: no predictions found. top-level keys=%s outputs[0] keys=%s "
+                            "(workflow likely only outputs visuals; add 'predictions' output in Roboflow workflow)",
+                            keys,
+                            out_keys,
+                        )
+                        logfire.warn("sam3.no_predictions", top_level_keys=keys, output_keys=out_keys)
+                    else:
+                        logger.warning("SAM3: no predictions found. top-level keys=%s", keys)
+                        logfire.warn("sam3.no_predictions", top_level_keys=keys)
                 else:
-                    logger.warning("SAM3: no predictions found. top-level keys=%s", keys)
+                    logger.warning("SAM3: no predictions found. payload_type=%s", type(payload).__name__)
+                    logfire.warn("sam3.no_predictions", payload_type=type(payload).__name__)
+                return None
+            segments = _normalize_segments(preds)
+            logger.info("SAM3: extracted %d segments", len(segments))
+            logfire.info("sam3.segments_extracted", count=len(segments))
+            return segments or None
+        except Exception as exc:
+            status_code = getattr(exc, "status_code", None)
+            api_message = getattr(exc, "api_message", None)
+            if status_code is not None or api_message is not None:
+                logger.warning(
+                    "SAM3 segmentation skipped (falling back to mocks): %s status=%s message=%s",
+                    type(exc).__name__,
+                    status_code,
+                    api_message,
+                )
+                logfire.warn("sam3.error", error=type(exc).__name__, status_code=status_code, api_message=api_message)
             else:
-                logger.warning("SAM3: no predictions found. payload_type=%s", type(payload).__name__)
+                logger.warning(
+                    "SAM3 segmentation skipped (falling back to mocks): %s: %s",
+                    type(exc).__name__,
+                    exc,
+                )
+                logfire.warn("sam3.error", error=type(exc).__name__, detail=str(exc))
             return None
-        segments = _normalize_segments(preds)
-        logger.info("SAM3: extracted %d segments", len(segments))
-        return segments or None
-    except Exception as exc:
-        status_code = getattr(exc, "status_code", None)
-        api_message = getattr(exc, "api_message", None)
-        if status_code is not None or api_message is not None:
-            logger.warning(
-                "SAM3 segmentation skipped (falling back to mocks): %s status=%s message=%s",
-                type(exc).__name__,
-                status_code,
-                api_message,
-            )
-        else:
-            logger.warning(
-                "SAM3 segmentation skipped (falling back to mocks): %s: %s",
-                type(exc).__name__,
-                exc,
-            )
-        return None
 
 
 async def sam3_raw_for_image(image_path: str | Path) -> dict[str, Any] | None:
@@ -463,6 +591,8 @@ async def sam3_raw_for_image(image_path: str | Path) -> dict[str, Any] | None:
     Returns the raw Roboflow workflow JSON response when configured.
     Returns None when not configured or when it fails.
     """
+    import logfire
+
     env = _load_env()
     if env is None:
         return None
@@ -471,12 +601,149 @@ async def sam3_raw_for_image(image_path: str | Path) -> dict[str, Any] | None:
     if not path.exists():
         return None
 
-    try:
-        payload = await asyncio.to_thread(_run_workflow_sync, env, path)
-        if isinstance(payload, dict):
-            return payload
-        # Ensure JSON-serializable dict shape for FastAPI responses.
-        return {"value": payload}
-    except Exception:
+    with logfire.span("sam3.raw_response", image=path.name):
+        try:
+            payload = await asyncio.to_thread(_run_workflow_sync, env, path)
+            if isinstance(payload, dict):
+                logfire.info("sam3.raw_ok", keys=list(payload.keys())[:10])
+                return payload
+            # Ensure JSON-serializable dict shape for FastAPI responses.
+            return {"value": payload}
+        except Exception:
+            return None
+
+
+# ---------------------------------------------------------------------------
+# Video analysis
+# ---------------------------------------------------------------------------
+
+async def sam3_segments_for_video(video_path: str | Path) -> list[AdSegment] | None:
+    """
+    Run the SAM3 workflow on evenly-spaced frames extracted from a video file.
+
+    Returns merged segment list (labels consistent across frames are upweighted),
+    or None if env is not configured / extraction fails / no predictions found.
+    """
+    import logfire
+
+    env = _load_env()
+    if env is None:
         return None
+
+    path = Path(video_path)
+    if not path.exists():
+        return None
+
+    max_frames = _video_max_frames()
+
+    with logfire.span(
+        "sam3.video_segments",
+        video=path.name,
+        max_frames=max_frames,
+        workflow_id=env.workflow_id,
+    ):
+        with tempfile.TemporaryDirectory(prefix="sam3_frames_") as tmp_dir:
+            frame_paths = await asyncio.to_thread(
+                _extract_video_frames, path, max_frames, Path(tmp_dir)
+            )
+
+            if not frame_paths:
+                logfire.warn("sam3.video_no_frames", video=path.name)
+                logger.warning("SAM3: no frames extracted from video %s", path.name)
+                return None
+
+            logger.info(
+                "SAM3: running workflow on %d frames from %s", len(frame_paths), path.name
+            )
+
+            # Run all frames through the workflow concurrently (up to max_frames at once).
+            frame_segs_list: list[list[AdSegment]] = []
+            tasks = [
+                asyncio.to_thread(_run_workflow_sync, env, fp)
+                for fp in frame_paths
+            ]
+            raw_payloads: list[Any] = await asyncio.gather(*tasks, return_exceptions=True)
+
+            for i, result in enumerate(raw_payloads):
+                if isinstance(result, BaseException):
+                    logger.warning(
+                        "SAM3: frame %d workflow error: %s: %s",
+                        i,
+                        type(result).__name__,
+                        result,
+                    )
+                    continue
+                preds = _extract_predictions(result)
+                if preds:
+                    segs = _normalize_segments(preds)
+                    if segs:
+                        frame_segs_list.append(segs)
+
+            if not frame_segs_list:
+                logfire.warn("sam3.video_no_predictions", video=path.name, frames=len(frame_paths))
+                logger.warning(
+                    "SAM3: no predictions across %d frames of %s", len(frame_paths), path.name
+                )
+                return None
+
+            merged = _merge_frame_segments(frame_segs_list)
+            logfire.info(
+                "sam3.video_segments_merged",
+                video=path.name,
+                frames_with_preds=len(frame_segs_list),
+                total_frames=len(frame_paths),
+                segments=len(merged),
+            )
+            logger.info(
+                "SAM3: merged %d segments from %d/%d frames of %s",
+                len(merged),
+                len(frame_segs_list),
+                len(frame_paths),
+                path.name,
+            )
+            return merged or None
+
+
+# ---------------------------------------------------------------------------
+# Unified entry points (image or video)
+# ---------------------------------------------------------------------------
+
+async def sam3_segments_for_file(file_path: str | Path) -> list[AdSegment] | None:
+    """
+    Dispatch to the appropriate SAM3 pipeline based on file type.
+
+    - Video files  → frame extraction + per-frame workflow + merge
+    - Image files  → existing single-image workflow
+
+    Returns None when not configured or on any failure (caller falls back to mocks).
+    """
+    path = Path(file_path)
+    if _is_video_file(path):
+        return await sam3_segments_for_video(path)
+    return await sam3_segments_for_image(path)
+
+
+async def sam3_raw_for_file(file_path: str | Path) -> dict[str, Any] | None:
+    """
+    Return the raw Roboflow response for an image file, or a summary dict for
+    a video file (raw responses per-frame would be huge).
+
+    Returns None when not configured or on any failure.
+    """
+    path = Path(file_path)
+    if _is_video_file(path):
+        # For videos we don't return the full raw payload of every frame —
+        # instead return a lightweight summary so callers know it was a video.
+        env = _load_env()
+        if env is None:
+            return None
+        max_frames = _video_max_frames()
+        return {
+            "source": "sam3_video",
+            "video": path.name,
+            "max_frames_sampled": max_frames,
+            "workspace": env.workspace,
+            "workflow_id": env.workflow_id,
+        }
+    return await sam3_raw_for_image(path)
 

@@ -1,0 +1,54 @@
+services:
+  # ── Backend: FastAPI ──────────────────────────────────────────────────────
+  - type: web
+    name: arcanalytics-backend
+    runtime: python
+    region: oregon
+    plan: starter
+    rootDir: .
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: ROBOFLOW_API_KEY
+        sync: false
+      - key: ROBOFLOW_WORKSPACE
+        value: arcanalytics
+      - key: ROBOFLOW_WORKFLOW_ID
+        value: sam3
+      - key: ROBOFLOW_API_URL
+        value: https://serverless.roboflow.com
+      - key: TRIBEV2_URL
+        sync: false
+      - key: TRIBEV2_TIMEOUT
+        value: "120"
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: LOGFIRE_TOKEN
+        sync: false
+      - key: CORS_ORIGINS
+        sync: false   # set to your Render frontend URL after first deploy
+
+  # ── Frontend: Next.js ─────────────────────────────────────────────────────
+  - type: web
+    name: arcanalytics-frontend
+    runtime: node
+    region: oregon
+    plan: starter
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20.11.0
+      - key: PORT
+        value: "3000"
+      - key: NEXT_PUBLIC_BACKEND_URL
+        fromService:
+          name: arcanalytics-backend
+          type: web
+          property: host
+          envVarKey: RENDER_EXTERNAL_URL

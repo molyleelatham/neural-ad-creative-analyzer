@@ -23,6 +23,7 @@ from backend.models.schemas import (
 from backend.models.merged_schemas import FullAnalysisResult
 from backend.services.compare_service import analyze_variants
 from backend.services.full_analysis_service import run_full_analysis
+from backend.services.tribev2_client import tribev2_health
 from backend.storage.uploads import save_upload
 
 
@@ -66,6 +67,11 @@ import os as _os
 _allowed_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:5500",
+    "http://127.0.0.1:5500",
+    "http://localhost:5501",
+    "http://127.0.0.1:5501",
+    "null",  # file:// origin
 ]
 # Allow additional origins via env var (comma-separated), e.g. your Vercel URL
 _extra = (_os.environ.get("CORS_ORIGINS") or "").strip()
@@ -91,6 +97,16 @@ async def health() -> HealthResponse:
     return HealthResponse(status="ok", service="arcanalytics-backend")
 
 
+@app.get("/tribev2/health")
+async def tribev2_health_check() -> dict:
+    """Proxy the TribeV2 Modal /health endpoint. Returns 503 if unreachable."""
+    from fastapi import HTTPException
+    result = await tribev2_health()
+    if result is None:
+        raise HTTPException(status_code=503, detail="TribeV2 Modal endpoint unreachable or TRIBEV2_URL not set.")
+    return result
+
+
 @app.post("/compare", response_model=ComparisonResult)
 async def compare(
     objective: Annotated[CampaignObjective, Form()],
@@ -105,6 +121,7 @@ async def compare(
         variant_inputs.append((label, original, str(path)))
 
     return await analyze_variants(variant_inputs, objective, audience_segment)
+
 
 
 @app.post("/analyze-full", response_model=FullAnalysisResult)

@@ -19,7 +19,10 @@ from typing import Any
 from backend.agents.attribution_agent import scores_from_neural
 from backend.agents.neural_agent import mock_neural_features
 from backend.agents.pydantic_ai_narrative import enrich_comparison_narrative
-from backend.agents.sam3_agent import sam3_raw_for_image, sam3_segments_for_image
+from backend.agents.sam3_agent import (
+    sam3_raw_for_file,
+    sam3_segments_for_file,
+)
 from backend.agents.segmentation_agent import mock_segments
 from backend.models.merged_schemas import (
     AnalyzeResponse,
@@ -70,10 +73,10 @@ async def _build_visual_variant(
     segments_source = "mock"
 
     if file_path:
-        segments = await sam3_segments_for_image(file_path)
+        segments = await sam3_segments_for_file(file_path)
         if segments:
             segments_source = "sam3"
-            roboflow_raw = await sam3_raw_for_image(file_path)
+            roboflow_raw = await sam3_raw_for_file(file_path)
 
     if not segments:
         segments = mock_segments()
@@ -233,8 +236,10 @@ async def run_full_analysis(
     warnings: list[str] = []
     mode: str = "single" if len(variant_inputs) == 1 else "compare"
 
-    # ── 1. Visual pipeline (SAM3) — one per variant ─────────────────────
-    visual_tasks = [
+    # ── Build all coroutines — SAM3 + TribeV2 fire at the same time ─────
+
+    # SAM3 visual pipeline — one per variant
+    visual_coros = [
         _build_visual_variant(
             variant_id=vid,
             filename=fname,
@@ -244,42 +249,46 @@ async def run_full_analysis(
         )
         for vid, fname, fpath, _ in variant_inputs
     ]
-    visual_analyses: list[VariantAnalysis] = list(await asyncio.gather(*visual_tasks))
 
-    # ── 2. Brain scoring (TribeV2 Modal) — run in parallel with nothing ─
-    brain_singles: list[AnalyzeResponse | None] = [None] * len(variant_inputs)
-    brain_compare_result: CompareResponse | None = None
+    # TribeV2 brain scoring coroutines
+    brain_single_coros = [
+        _brain_single(raw_bytes, fname)
+        for _, fname, _, raw_bytes in variant_inputs
+    ]
 
-    if mode == "single":
-        vid, fname, _fpath, raw_bytes = variant_inputs[0]
-        brain_singles[0] = await _brain_single(raw_bytes, fname)
-        if brain_singles[0] is None:
-            warnings.append(
-                "Brain scoring (TribeV2) was unavailable or timed out — "
-                "visual analysis is still complete."
-            )
-    else:
-        # Run all single-ad brain scores + the head-to-head compare concurrently
-        single_coros = [
-            _brain_single(raw_bytes, fname)
-            for _, fname, _, raw_bytes in variant_inputs
-        ]
-        # compare only meaningful for exactly 2; for 3+ we skip compare endpoint
-        if len(variant_inputs) == 2:
-            _, fname_a, _, bytes_a = variant_inputs[0]
-            _, fname_b, _, bytes_b = variant_inputs[1]
-            compare_coro = _brain_compare(bytes_a, fname_a, bytes_b, fname_b)
-            results = await asyncio.gather(*single_coros, compare_coro)
-            brain_singles = list(results[:-1])
-            brain_compare_result = results[-1]
-        else:
-            brain_singles = list(await asyncio.gather(*single_coros))
+    # Head-to-head compare (only for exactly 2 variants)
+    brain_compare_coro = None
+    if mode == "compare" and len(variant_inputs) == 2:
+        _, fname_a, _, bytes_a = variant_inputs[0]
+        _, fname_b, _, bytes_b = variant_inputs[1]
+        brain_compare_coro = _brain_compare(bytes_a, fname_a, bytes_b, fname_b)
 
-        if all(b is None for b in brain_singles):
-            warnings.append(
-                "Brain scoring (TribeV2) was unavailable or timed out — "
-                "visual analysis is still complete."
-            )
+    # ── Fire everything concurrently ─────────────────────────────────────
+    all_coros: list = [*visual_coros, *brain_single_coros]
+    if brain_compare_coro is not None:
+        all_coros.append(brain_compare_coro)
+
+    all_results = await asyncio.gather(*all_coros)
+
+    # Unpack results in the same order we appended coroutines
+    n_variants = len(variant_inputs)
+    visual_analyses: list[VariantAnalysis] = list(all_results[:n_variants])
+    brain_singles: list[AnalyzeResponse | None] = list(all_results[n_variants : n_variants * 2])
+    brain_compare_result: CompareResponse | None = (
+        all_results[-1] if brain_compare_coro is not None else None
+    )
+
+    # Warnings if brain scoring came back empty
+    if mode == "single" and brain_singles[0] is None:
+        warnings.append(
+            "Brain scoring (TribeV2) was unavailable or timed out — "
+            "visual analysis is still complete."
+        )
+    elif mode == "compare" and all(b is None for b in brain_singles):
+        warnings.append(
+            "Brain scoring (TribeV2) was unavailable or timed out — "
+            "visual analysis is still complete."
+        )
 
     # ── 3. Pick overall/objective winners ───────────────────────────────
     objective_winner_analysis = max(

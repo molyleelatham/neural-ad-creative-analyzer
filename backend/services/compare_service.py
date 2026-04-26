@@ -6,7 +6,7 @@ from backend.agents.segmentation_agent import mock_segments
 import csv
 from pathlib import Path
 
-from backend.agents.sam3_agent import sam3_raw_for_image, sam3_segments_for_image
+from backend.agents.sam3_agent import sam3_raw_for_file, sam3_segments_for_file
 from backend.models.schemas import (
     AudienceSegment,
     CampaignObjective,
@@ -537,9 +537,9 @@ async def analyze_variants(
         roboflow_raw = None
         segments_source = "mock"
         if file_path:
-            segments = await sam3_segments_for_image(file_path)
+            segments = await sam3_segments_for_file(file_path)
             if segments:
-                roboflow_raw = await sam3_raw_for_image(file_path)
+                roboflow_raw = await sam3_raw_for_file(file_path)
         if not segments:
             segments = mock_segments()
         else:
