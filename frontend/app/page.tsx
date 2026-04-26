@@ -31,7 +31,7 @@ export default function HomePage() {
                 fontSize: 10, fontWeight: 600, color: 'white',
                 background: ACCENT, padding: '3px 8px', borderRadius: 999,
               }}>NEW</span>
-              <span style={{ color: 'var(--v3-ink-2)' }}>TribeV2 brain encoder · live</span>
+              <span style={{ color: 'var(--v3-ink-2)' }}>TribeV2 neural encoder · live</span>
             </div>
 
             {/* Headline */}
@@ -44,8 +44,8 @@ export default function HomePage() {
               margin: '0 0 32px',
               color: 'var(--v3-ink)',
             }}>
-              Know what your<br />
-              ad does to the<br />
+              Marketers spend<br />
+              billions. Know what<br />
               <span style={{ position: 'relative', display: 'inline-block' }}>
                 <em style={{
                   fontStyle: 'italic',
@@ -53,7 +53,7 @@ export default function HomePage() {
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
-                }}>brain</em>
+                }}>customers think</em>
                 <svg
                   width="100%" height="14" viewBox="0 0 240 14"
                   preserveAspectRatio="none"
@@ -62,20 +62,21 @@ export default function HomePage() {
                   <path d="M2,10 Q60,2 120,8 T238,6" stroke={ACCENT} strokeWidth="1.5" fill="none" strokeLinecap="round" />
                 </svg>
               </span>{' '}
-              — before you spend.
+              first.
             </h1>
 
             <p style={{
               fontSize: 18, lineHeight: 1.55, color: 'var(--v3-ink-2)',
               maxWidth: 480, margin: '0 0 36px', fontWeight: 400,
             }}>
-              Upload an ad. Computer vision finds every element, our neural encoder predicts what
-              the viewer's brain does next, and you get plain-English fixes ranked by lift.
+              Arcanalytics turns unstructured creative into structured neural data. A custom computer vision
+              model segments every element in your ad. TribeV2 — trained on cortical fMRI — maps engagement
+              across 6 brain regions and predicts conversion probability, frame by frame.
             </p>
 
             <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
               <Link href="/analyze" className="v3-btn v3-btn-primary" style={{ fontSize: 14, padding: '14px 24px' }}>
-                Analyze your first ad
+                Run an analysis
               </Link>
             </div>
           </div>
@@ -96,7 +97,7 @@ export default function HomePage() {
                 margin: '6px 0 0', letterSpacing: '-0.02em',
                 color: 'var(--v3-ink)',
               }}>
-                A report, end to end.
+                Full neural report, end to end.
               </h2>
             </div>
             <span style={{ fontSize: 13, color: 'var(--v3-ink-3)' }}>example · cosmetics campaign · 14s spot</span>
@@ -116,27 +117,45 @@ export default function HomePage() {
               margin: '8px 0 0', letterSpacing: '-0.025em',
               color: 'var(--v3-ink)',
             }}>
-              From upload to insight in{' '}
+              From upload to neural insight in{' '}
               <em style={{ color: ACCENT, fontStyle: 'italic' }}>under 30 seconds.</em>
             </h2>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1, background: 'oklch(0.92 0.005 90)' }}>
             {[
-              { n: '01', t: 'Upload',  d: 'Drop an image or video. Single ad or A/B compare with two creatives.' },
-              { n: '02', t: 'Analyze', d: 'Computer vision segments every element. TribeV2 encodes 6 cortical regions.' },
-              { n: '03', t: 'Act',     d: 'Get a composite score, A/B winner, and ranked recommendations with projected lift.' },
+              {
+                n: '01', t: 'Upload',
+                d: 'Drop an image or short-form video. Run a single creative or A/B test two variants head-to-head.',
+                detail: ['Accepts JPEG, PNG, MP4, MOV', 'A/B mode scores both and declares a winner', 'Unstructured creative in — structured neural data out'],
+              },
+              {
+                n: '02', t: 'Encode',
+                d: 'A custom computer vision model detects and classifies every visual element. TribeV2 — trained on cortical fMRI — encodes 6 brain regions and assigns attention weights per element.',
+                detail: ['CV model: object detection, segmentation, pillar tagging', '6-region cortical activation (V1, PFC, ACC, amygdala, and more)', 'Bayesian P(convert) curve computed over the full creative timeline'],
+              },
+              {
+                n: '03', t: 'Act',
+                d: 'Receive a composite neural engagement score benchmarked against category norms, plus ranked creative recommendations with projected lift.',
+                detail: ['Composite score benchmarked to category percentile', 'Recommendations ranked by predicted conversion lift', 'Exportable report with full region-level breakdown'],
+              },
             ].map((s) => (
-              <div key={s.n} style={{
-                padding: 36, background: 'white',
-              }}>
+              <div key={s.n} style={{ padding: 36, background: 'white' }}>
                 <span className="mono" style={{ fontSize: 11, color: 'var(--v3-ink-3)', fontWeight: 600, display: 'block', marginBottom: 20 }}>STEP {s.n}</span>
                 <h3 style={{
                   fontFamily: 'var(--v3-font-serif)',
                   fontSize: 32, fontWeight: 400, margin: '0 0 10px', letterSpacing: '-0.015em',
                   color: 'var(--v3-ink)',
                 }}>{s.t}</h3>
-                <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--v3-ink-2)', margin: 0 }}>{s.d}</p>
+                <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--v3-ink-2)', margin: '0 0 20px' }}>{s.d}</p>
+                <div style={{ display: 'grid', gap: 8 }}>
+                  {s.detail.map((line, i) => (
+                    <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'baseline' }}>
+                      <span style={{ width: 4, height: 4, borderRadius: '50%', background: ACCENT, flexShrink: 0, marginTop: 6 }} />
+                      <span style={{ fontSize: 13, color: 'var(--v3-ink-3)', lineHeight: 1.5 }}>{line}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
@@ -152,8 +171,9 @@ export default function HomePage() {
             fontWeight: 400, margin: 0, letterSpacing: '-0.03em', lineHeight: 1,
             color: 'var(--v3-ink)',
           }}>
-            Stop guessing.<br />
-            Start <em style={{ color: ACCENT, fontStyle: 'italic' }}>knowing.</em>
+            Stop guessing<br />
+            what customers<br />
+            <em style={{ color: ACCENT, fontStyle: 'italic' }}>think.</em>
           </h2>
           <Link href="/analyze" className="v3-btn v3-btn-primary" style={{ fontSize: 15, padding: '16px 28px', marginTop: 36 }}>
             Upload your first ad

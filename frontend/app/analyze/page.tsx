@@ -35,6 +35,7 @@ interface AnalysisResult {
         confidence: number;
         visual_weight_pct: number;
         pillar?: string;
+        segment_type?: string;
       }>;
     };
     brain_single?: {
