@@ -580,12 +580,8 @@ function VisionTab({ result }: { result: AnalysisResult | null }) {
                 </div>
                 <span className="mono" style={{ fontSize: 12, fontWeight: 600, width: 24, textAlign: 'right' }}>{v}</span>
               </div>
-            );
-          }) : (
-            <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--v3-ink-3)' }}>
-              No brain region data available
             </div>
-          )}
+          ))}
         </div>
 
         <div style={{
