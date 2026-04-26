@@ -2171,7 +2171,10 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                         let accumulatedEvidence = 0;
                         pillarTimeline.forEach(pt => {
                           if (pt.second <= t) {
-                            accumulatedEvidence += pt.activation_score * 0.1;
+                            // Sum all pillar activations at this time point
+                            const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
+                                             pt.memory + pt.sensory + pt.engagement;
+                            accumulatedEvidence += (pillarSum / 6) * 0.1; // Average of all pillars
                           }
                         });
                         
@@ -2218,7 +2221,10 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                           let accumulatedEvidence = 0;
                           pillarTimeline.forEach(pt => {
                             if (pt.second <= t) {
-                              accumulatedEvidence += pt.activation_score * 0.1;
+                              // Sum all pillar activations at this time point
+                              const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
+                                               pt.memory + pt.sensory + pt.engagement;
+                              accumulatedEvidence += (pillarSum / 6) * 0.1; // Average of all pillars
                             }
                           });
                           
@@ -2246,7 +2252,10 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                         let accumulatedEvidence = 0;
                         pillarTimeline.forEach(pt => {
                           if (pt.second <= t) {
-                            accumulatedEvidence += pt.activation_score * 0.1;
+                            // Sum all pillar activations at this time point
+                            const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
+                                             pt.memory + pt.sensory + pt.engagement;
+                            accumulatedEvidence += (pillarSum / 6) * 0.1; // Average of all pillars
                           }
                         });
                         
@@ -2309,7 +2318,10 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                         const priorProb = 0.025;
                         let accumulatedEvidence = 0;
                         pillarTimeline.forEach(pt => {
-                          accumulatedEvidence += pt.activation_score * 0.1;
+                          // Sum all pillar activations at this time point
+                          const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
+                                           pt.memory + pt.sensory + pt.engagement;
+                          accumulatedEvidence += (pillarSum / 6) * 0.1; // Average of all pillars
                         });
                         const likelihood = Math.min(0.95, accumulatedEvidence + 0.1);
                         const evidence = 0.15;
@@ -2330,7 +2342,10 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                       {(() => {
                         let totalEvidence = 0;
                         pillarTimeline.forEach(pt => {
-                          totalEvidence += pt.activation_score;
+                          // Sum all pillar activations at this time point
+                          const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
+                                           pt.memory + pt.sensory + pt.engagement;
+                          totalEvidence += (pillarSum / 6); // Average of all pillars
                         });
                         return (totalEvidence * 2.3).toFixed(1);
                       })()}
@@ -2349,7 +2364,10 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                         const priorProb = 0.025;
                         let accumulatedEvidence = 0;
                         pillarTimeline.forEach(pt => {
-                          accumulatedEvidence += pt.activation_score * 0.1;
+                          // Sum all pillar activations at this time point
+                          const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
+                                           pt.memory + pt.sensory + pt.engagement;
+                          accumulatedEvidence += (pillarSum / 6) * 0.1; // Average of all pillars
                         });
                         const likelihood = Math.min(0.95, accumulatedEvidence + 0.1);
                         const evidence = 0.15;
