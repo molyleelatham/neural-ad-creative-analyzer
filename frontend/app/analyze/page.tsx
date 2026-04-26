@@ -26,8 +26,9 @@ interface AnalysisResult {
       neural_features: {
         attention_score: number;
         emotional_intensity: number;
-        memory_encoding: number;
-        p_convert_peak: number;
+        memory_signal: number;
+        friction_score: number;
+        predicted_attention_ms: number;
       };
       segments: Array<{
         label: string;

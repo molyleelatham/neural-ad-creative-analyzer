@@ -22,11 +22,13 @@ interface Variant {
   id: number;
   variant_label: string;
   original_filename: string;
-  visual_scores?: {
-    purchase_score: number;
-    engagement_score: number;
-    virality_score: number;
-    clarity_score: number;
+  visual?: {
+    scores: {
+      purchase: number;
+      engagement: number;
+      virality: number;
+      clarity: number;
+    };
   };
 }
 
@@ -144,11 +146,11 @@ export default function DashboardPage() {
 
     const allScores = analyses.flatMap(a => 
       a.variants.flatMap(v => 
-        v.visual_scores ? [
-          v.visual_scores.purchase_score,
-          v.visual_scores.engagement_score,
-          v.visual_scores.virality_score,
-          v.visual_scores.clarity_score
+        v.visual?.scores ? [
+          v.visual.scores.purchase,
+          v.visual.scores.engagement,
+          v.visual.scores.virality,
+          v.visual.scores.clarity
         ] : []
       )
     );
@@ -159,8 +161,8 @@ export default function DashboardPage() {
 
     const topAnalysis = analyses.reduce((top, current) => {
       const currentTop = current.variants.reduce((vTop, v) => {
-        const score = v.visual_scores ? 
-          Math.max(v.visual_scores.purchase_score, v.visual_scores.engagement_score) : 0;
+        const score = v.visual?.scores ? 
+          Math.max(v.visual.scores.purchase, v.visual.scores.engagement) : 0;
         return score > vTop.score ? { score, name: v.original_filename } : vTop;
       }, { score: 0, name: '' });
       
@@ -417,8 +419,8 @@ export default function DashboardPage() {
           ) : (
             analyses.flatMap((analysis, analysisIndex) => 
               analysis.variants.map((variant, variantIndex) => {
-                const score = variant.visual_scores ? 
-                  Math.max(variant.visual_scores.purchase_score, variant.visual_scores.engagement_score) : 0;
+                const score = variant.visual?.scores ? 
+                  Math.max(variant.visual.scores.purchase, variant.visual.scores.engagement) : 0;
                 const trend = score > 75 ? '+12' : score > 60 ? '+3' : '-5';
                 const seed = analysisIndex * 2 + variantIndex;
                 

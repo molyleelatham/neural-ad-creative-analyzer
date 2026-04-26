@@ -232,38 +232,38 @@ async def analyze_full(
             variant_id = await db_manager.create_variant(variant_data)
             
             # Save visual scores
-            if variant.visual_scores:
+            if variant.visual?.scores:
                 score_data = VisualScoresCreate(
                     variant_id=variant_id,
-                    purchase_score=variant.visual_scores.purchase_score,
-                    engagement_score=variant.visual_scores.engagement_score,
-                    virality_score=variant.visual_scores.virality_score,
-                    clarity_score=variant.visual_scores.clarity_score
+                    purchase_score=variant.visual.scores.purchase,
+                    engagement_score=variant.visual.scores.engagement,
+                    virality_score=variant.visual.scores.virality,
+                    clarity_score=variant.visual.scores.clarity
                 )
                 await db_manager.create_visual_scores(score_data)
             
             # Save visual segments
-            if variant.visual_segments:
-                for segment in variant.visual_segments:
+            if variant.visual?.segments:
+                for segment in variant.visual.segments:
                     segment_data = VisualSegmentCreate(
                         variant_id=variant_id,
-                        label=segment.segment_type,
-                        confidence=segment.confidence_score,
-                        visual_weight_pct=getattr(segment, 'visual_weight_pct', None),
-                        geometry=segment.bounding_box
+                        label=segment.label,
+                        confidence=segment.confidence,
+                        visual_weight_pct=segment.visual_weight_pct,
+                        geometry=None  # Add geometry if available in the future
                     )
                     await db_manager.create_visual_segments(segment_data)
             
             # Save brain analysis if available
-            if variant.brain_analysis:
+            if variant.brain_single:
                 brain_data = BrainAnalysisCreate(
                     variant_id=variant_id,
-                    composite_score=getattr(variant.brain_analysis, 'composite_score', None),
-                    peak_score=getattr(variant.brain_analysis, 'peak_score', None),
-                    peak_second=getattr(variant.brain_analysis, 'peak_second', None),
-                    sustained_score=getattr(variant.brain_analysis, 'sustained_score', None),
-                    dropoff_penalty=getattr(variant.brain_analysis, 'dropoff_penalty', None),
-                    dominant_emotion_overall=getattr(variant.brain_analysis, 'dominant_emotion_overall', None)
+                    composite_score=getattr(variant.brain_single.ad, 'composite_score', None),
+                    peak_score=getattr(variant.brain_single.ad, 'peak_score', None),
+                    peak_second=getattr(variant.brain_single.ad, 'peak_second', None),
+                    sustained_score=getattr(variant.brain_single.ad, 'sustained_score', None),
+                    dropoff_penalty=getattr(variant.brain_single.ad, 'dropoff_penalty', None),
+                    dominant_emotion_overall=getattr(variant.brain_single.ad, 'dominant_emotion_overall', None)
                 )
                 await db_manager.create_brain_analysis(brain_data)
         
