@@ -6,10 +6,8 @@ const backendUrl =
     : "http://localhost:8000");
 
 const nextConfig = {
-  // Fix Turbopack root directory issue
-  webpack: (config, { dev, isServer }) => {
-    return config;
-  },
+  // Empty Turbopack config to silence the warning
+  turbopack: {},
   // Proxy all /api/* requests to the FastAPI backend.
   // This avoids CORS issues — the browser talks to the Next.js server,
   // which forwards to FastAPI server-side.
