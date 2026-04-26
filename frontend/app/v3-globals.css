@@ -43,10 +43,10 @@
   --v3-radius-md: 16px;
   --v3-radius-lg: 24px;
 
-  /* Shadows */
-  --v3-shadow-sm: 0 4px 16px -4px rgba(0,0,0,0.04);
-  --v3-shadow-md: 0 8px 24px -8px rgba(0,0,0,0.07);
-  --v3-shadow-lg: 0 24px 48px -12px rgba(0,0,0,0.10), 0 0 0 1px rgba(255,255,255,0.5) inset;
+  /* Shadows — intentionally flat */
+  --v3-shadow-sm: none;
+  --v3-shadow-md: none;
+  --v3-shadow-lg: none;
 }
 
 /* ─── Reset ─── */
@@ -137,13 +137,10 @@ body {
 .v3-btn-primary {
   background: var(--v3-ink);
   color: var(--v3-surface);
-  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 }
 
 .v3-btn-primary:hover {
-  opacity: 0.88;
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(0,0,0,0.16);
+  opacity: 0.82;
 }
 
 .v3-btn-secondary {

@@ -230,7 +230,6 @@ function pillBtn(primary?: boolean) {
     border: primary ? 'none' : '1px solid oklch(0.92 0.005 90)',
     padding: '9px 16px', borderRadius: 999, fontSize: 13, fontWeight: 500,
     fontFamily: 'inherit', cursor: 'pointer',
-    boxShadow: primary ? '0 2px 6px rgba(0,0,0,0.1)' : 'none',
   } as React.CSSProperties;
 }
 
@@ -238,7 +237,6 @@ function card() {
   return {
     background: 'white', borderRadius: 16, padding: 24,
     border: '1px solid oklch(0.88 0.008 90)',
-    boxShadow: '0 4px 16px -4px rgba(0,0,0,0.08)',
   } as React.CSSProperties;
 }
 
@@ -451,7 +449,7 @@ const AnalysisStatus = () => {
     <div style={{
       background: 'white', borderRadius: 16, padding: 20,
       border: '1px solid oklch(0.92 0.005 90)',
-      marginBottom: 24, boxShadow: '0 4px 12px -2px rgba(0,0,0,0.03)'
+      marginBottom: 24,
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
         <span style={{ fontSize: 20 }}>{getStatusIcon()}</span>
@@ -746,9 +744,8 @@ const AnalysisStatus = () => {
             ) : (<>
             {/* Composite + scores */}
             <div style={{
-              background: 'white', borderRadius: 20,
+              background: 'white', borderRadius: 16,
               border: '1px solid oklch(0.92 0.005 90)',
-              boxShadow: '0 8px 24px -8px rgba(0,0,0,0.05)',
               overflow: 'hidden', marginBottom: 24,
             }}>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
@@ -898,7 +895,6 @@ function VariantCard({ file, variant, label, isWinner }: {
     <div style={{
       background: 'white', borderRadius: 16, overflow: 'hidden',
       border: `2px solid ${isWinner ? color : 'oklch(0.93 0.005 90)'}`,
-      boxShadow: isWinner ? `0 4px 24px -4px ${color}55` : '0 4px 16px -4px rgba(0,0,0,0.04)',
     }}>
       <div style={{ padding: '12px 16px', background: bgColor, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -1054,7 +1050,7 @@ function ComparisonSection({ result, fileA, fileB }: {
       <div style={{
         background: 'white', borderRadius: 16, padding: 28,
         border: '1px solid oklch(0.93 0.005 90)',
-        boxShadow: '0 4px 16px -4px rgba(0,0,0,0.04)', marginBottom: 24,
+        marginBottom: 24,
       }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 24, fontWeight: 400, margin: 0 }}>Performance comparison</h3>
@@ -1217,7 +1213,7 @@ function ComparisonSection({ result, fileA, fileB }: {
         <div style={{
           background: 'white', borderRadius: 16, padding: 24,
           border: '1px solid oklch(0.93 0.005 90)',
-          boxShadow: '0 4px 16px -4px rgba(0,0,0,0.04)', marginBottom: 20,
+          marginBottom: 20,
         }}>
           <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 22, fontWeight: 400, margin: '0 0 16px' }}>Brain ROI comparison</h3>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px 80px', gap: '0 12px', fontSize: 12 }}>
@@ -1244,7 +1240,7 @@ function ComparisonSection({ result, fileA, fileB }: {
           background: `linear-gradient(135deg, oklch(0.975 0.02 200), white)`,
           borderRadius: 16, padding: 32,
           border: `1px solid oklch(0.9 0.04 180)`,
-          boxShadow: '0 4px 16px -4px rgba(0,0,0,0.04)', marginBottom: 24,
+          marginBottom: 24,
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
             <div style={{ 
@@ -1622,7 +1618,6 @@ function VisionTab({ result, objective }: { result: AnalysisResult | null; objec
                               ? `linear-gradient(90deg, ${ACCENT}, oklch(0.65 0.13 200))`
                               : `linear-gradient(90deg, ${PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.70 0.008 90)'}, oklch(0.65 0.13 200))`,
                             borderRadius: 999,
-                            boxShadow: isImportant ? '0 0 8px rgba(0, 142, 180, 0.3)' : 'none'
                           }} />
                         </div>
                         <div style={{ textAlign: 'right' }}>
@@ -1831,7 +1826,6 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                     borderRadius: 999, 
                     background: pillar.color, 
                     color: 'white',
-                    boxShadow: `0 2px 8px ${pillar.color}40`
                   }}>
                     {Math.round(pillar.score * 100)}%
                   </span>
@@ -1841,14 +1835,12 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                   background: 'oklch(0.92 0.008 90)', 
                   borderRadius: 999, 
                   overflow: 'hidden',
-                  boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)'
                 }}>
                   <div style={{ 
                     width: `${Math.max(5, pillar.score * 100)}%`, 
                     height: '100%', 
                     background: `linear-gradient(90deg, ${pillar.color}, ${pillar.color}dd)`, 
                     borderRadius: 999,
-                    boxShadow: `0 0 12px ${pillar.color}60`,
                     transition: 'all 0.3s ease'
                   }} />
                 </div>
@@ -1924,13 +1916,12 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                   <div style={{ fontSize: 12, color: 'var(--v3-ink)', fontWeight: 500 }}>{region.label}</div>
                   <div style={{ fontSize: 9, color: col, fontWeight: 600 }}>{sys}</div>
                 </div>
-                <div style={{ height: 6, background: 'oklch(0.92 0.008 90)', borderRadius: 999, overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.1)' }}>
+                <div style={{ height: 6, background: 'oklch(0.92 0.008 90)', borderRadius: 999, overflow: 'hidden' }}>
                   <div style={{ 
                     width: `${Math.max(5, Math.min(100, (region.mean_activation / 0.15) * 100))}%`, 
                     height: '100%', 
                     background: `linear-gradient(90deg, ${col}, ${col}dd)`, 
                     borderRadius: 999,
-                    boxShadow: `0 0 8px ${col}60`
                   }} />
                 </div>
                 <span className="mono" style={{ fontSize: 10, fontWeight: 600, textAlign: 'right', color: 'var(--v3-ink)' }}>{region.mean_activation.toFixed(3)}</span>
@@ -1957,15 +1948,46 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
 
           <div style={{ background: 'oklch(0.985 0.003 90)', borderRadius: 10, padding: '10px 6px' }}>
             <svg width="100%" viewBox="0 0 380 100" style={{ display: 'block' }}>
-              {/* Grid lines */}
+              {/* Grid lines and Y-axis labels */}
               {[0.25, 0.5, 0.75].map(y => (
-                <line key={y} x1="6" y1={6 + (1 - y) * 88} x2="374" y2={6 + (1 - y) * 88}
-                  stroke="oklch(0.93 0.005 90)" strokeWidth="0.5" />
+                <g key={y}>
+                  <line x1="6" y1={6 + (1 - y) * 88} x2="374" y2={6 + (1 - y) * 88}
+                    stroke="oklch(0.93 0.005 90)" strokeWidth="0.5" />
+                  <text x="2" y={6 + (1 - y) * 88 + 3} fill="oklch(0.6 0.005 90)" fontSize="8" textAnchor="end">
+                    {(y * 100).toFixed(0)}
+                  </text>
+                </g>
               ))}
+              
+              {/* Y-axis title */}
+              <text x="35" y="4" fill="oklch(0.6 0.005 90)" fontSize="8" textAnchor="middle" transform="rotate(-90 35 50)">
+                    Activation
+              </text>
+              
               {pillarTimeline.length > 0 ? pillarKeys.map(key => (
-                <polyline key={key} points={pillarPoints(key)} fill="none"
-                  stroke={PILLAR_COLORS[key] ?? PILLAR_FALLBACK[key]}
-                  strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+                <g key={key}>
+                  <polyline points={pillarPoints(key)} fill="none"
+                    stroke={PILLAR_COLORS[key] ?? PILLAR_FALLBACK[key]}
+                    strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+                  {/* Add data points */}
+                  {pillarTimeline.map((pt, i) => {
+                    const W = 380, H = 100, padX = 6, padY = 6;
+                    const x = padX + (pt.second / maxSecond) * (W - padX * 2);
+                    const y = padY + (1 - pt[key]) * (H - padY * 2);
+                    return (
+                      <circle
+                        key={i}
+                        cx={x}
+                        cy={y}
+                        r="2.5"
+                        fill={PILLAR_COLORS[key] ?? PILLAR_FALLBACK[key]}
+                        stroke="white"
+                        strokeWidth="1"
+                        opacity="0.9"
+                      />
+                    );
+                  })}
+                </g>
               )) : (
                 <text x="190" y="54" textAnchor="middle" fill="oklch(0.75 0.005 90)" fontSize="11">
                   Run analysis to see timeline
@@ -2050,7 +2072,6 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                         height: '100%',
                         background: 'linear-gradient(90deg, oklch(0.65 0.13 200), oklch(0.55 0.16 220))',
                         borderRadius: 999,
-                        boxShadow: '0 0 8px rgba(0, 142, 180, 0.3)'
                       }} />
                     </div>
                   </div>
@@ -2281,16 +2302,17 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                             // Sum all pillar activations at this time point
                             const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
                                              pt.memory + pt.sensory + pt.engagement;
-                            accumulatedEvidence += (pillarSum / 6) * 0.1; // Average of all pillars
+                            accumulatedEvidence += (pillarSum / 6) * 0.3; // Increased factor for more visible trends
                           }
                         });
                         
-                        // Bayesian update: Posterior = (Likelihood × Prior) / Evidence
-                        const likelihood = Math.min(0.95, accumulatedEvidence + 0.1);
-                        const evidence = 0.15; // Normalization factor
+                        // Improved Bayesian update with better scaling
+                        const likelihood = Math.min(0.98, Math.max(0.05, accumulatedEvidence + 0.15));
+                        const evidence = 0.08; // Reduced normalization factor
                         const posteriorProb = (likelihood * priorProb) / (likelihood * priorProb + evidence * (1 - priorProb));
                         
-                        const y = 200 - (posteriorProb * 100 * 1.5);
+                        // Scale to fit chart better with improved Y-axis range
+                        const y = 180 - (posteriorProb * 1000); // Scaled for better visibility
                         points.push(`${x},${y}`);
                       }
                       
@@ -2331,16 +2353,17 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                               // Sum all pillar activations at this time point
                               const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
                                                pt.memory + pt.sensory + pt.engagement;
-                              accumulatedEvidence += (pillarSum / 6) * 0.1; // Average of all pillars
+                              accumulatedEvidence += (pillarSum / 6) * 0.3; // Increased factor for more visible trends
                             }
                           });
                           
-                          // Bayesian update: Posterior = (Likelihood × Prior) / Evidence
-                          const likelihood = Math.min(0.95, accumulatedEvidence + 0.1);
-                          const evidence = 0.15; // Normalization factor
+                          // Improved Bayesian update with better scaling
+                          const likelihood = Math.min(0.98, Math.max(0.05, accumulatedEvidence + 0.15));
+                          const evidence = 0.08; // Reduced normalization factor
                           const posteriorProb = (likelihood * priorProb) / (likelihood * priorProb + evidence * (1 - priorProb));
                           
-                          const y = 200 - (posteriorProb * 100 * 1.5);
+                          // Scale to fit chart better with improved Y-axis range
+                          const y = 180 - (posteriorProb * 1000); // Scaled for better visibility
                           points.push(`${x},${y}`);
                         }
                         
@@ -2362,12 +2385,12 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                             // Sum all pillar activations at this time point
                             const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
                                              pt.memory + pt.sensory + pt.engagement;
-                            accumulatedEvidence += (pillarSum / 6) * 0.1; // Average of all pillars
+                            accumulatedEvidence += (pillarSum / 6) * 0.3; // Increased factor for more visible trends
                           }
                         });
                         
-                        const likelihood = Math.min(0.95, accumulatedEvidence + 0.1);
-                        const evidence = 0.15;
+                        const likelihood = Math.min(0.98, Math.max(0.05, accumulatedEvidence + 0.15));
+                        const evidence = 0.08;
                         const posteriorProb = (likelihood * priorProb) / (likelihood * priorProb + evidence * (1 - priorProb));
                         
                         if (posteriorProb > maxProb) {
@@ -2377,7 +2400,7 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                       }
                       
                       const x = 40 + (maxTime * (340 / timeSteps));
-                      const y = 200 - (maxProb * 100 * 1.5);
+                      const y = 180 - (maxProb * 1000); // Scaled for better visibility
                       
                       return (
                         <g>
@@ -2428,10 +2451,10 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                           // Sum all pillar activations at this time point
                           const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
                                            pt.memory + pt.sensory + pt.engagement;
-                          accumulatedEvidence += (pillarSum / 6) * 0.1; // Average of all pillars
+                          accumulatedEvidence += (pillarSum / 6) * 0.3; // Increased factor for more visible trends
                         });
-                        const likelihood = Math.min(0.95, accumulatedEvidence + 0.1);
-                        const evidence = 0.15;
+                        const likelihood = Math.min(0.98, Math.max(0.05, accumulatedEvidence + 0.15));
+                        const evidence = 0.08;
                         const posteriorProb = (likelihood * priorProb) / (likelihood * priorProb + evidence * (1 - priorProb));
                         return `${(posteriorProb * 100).toFixed(1)}%`;
                       })()}
@@ -2474,10 +2497,10 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                           // Sum all pillar activations at this time point
                           const pillarSum = pt.hook + pt.emotion + pt.persuasion + 
                                            pt.memory + pt.sensory + pt.engagement;
-                          accumulatedEvidence += (pillarSum / 6) * 0.1; // Average of all pillars
+                          accumulatedEvidence += (pillarSum / 6) * 0.3; // Increased factor for more visible trends
                         });
-                        const likelihood = Math.min(0.95, accumulatedEvidence + 0.1);
-                        const evidence = 0.15;
+                        const likelihood = Math.min(0.98, Math.max(0.05, accumulatedEvidence + 0.15));
+                        const evidence = 0.08;
                         const posteriorProb = (likelihood * priorProb) / (likelihood * priorProb + evidence * (1 - priorProb));
                         const increase = ((posteriorProb - priorProb) / priorProb * 100);
                         return increase.toFixed(0);

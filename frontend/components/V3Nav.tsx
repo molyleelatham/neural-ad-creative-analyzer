@@ -55,7 +55,6 @@ export function V3Nav({ currentPage = 'home' }: V3NavProps) {
               transition: 'all 0.18s',
               color: currentPage === item.id ? 'var(--v3-ink)' : 'var(--v3-ink-3)',
               background: currentPage === item.id ? 'white' : 'transparent',
-              boxShadow: currentPage === item.id ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
             }}
           >
             {item.label}

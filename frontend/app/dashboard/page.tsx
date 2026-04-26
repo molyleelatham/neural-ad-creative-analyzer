@@ -58,7 +58,6 @@ function card() {
   return {
     background: 'white', borderRadius: 16, padding: 24,
     border: '1px solid oklch(0.93 0.005 90)',
-    boxShadow: '0 4px 16px -4px rgba(0,0,0,0.04)',
   } as React.CSSProperties;
 }
 
@@ -380,7 +379,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Reports table */}
-        <div style={{ background: 'white', borderRadius: 20, border: '1px solid oklch(0.92 0.005 90)', overflow: 'hidden', boxShadow: '0 4px 16px -4px rgba(0,0,0,0.04)' }}>
+        <div style={{ background: 'white', borderRadius: 16, border: '1px solid oklch(0.92 0.005 90)', overflow: 'hidden' }}>
           <div style={{
             padding: '20px 24px', borderBottom: '1px solid oklch(0.95 0.005 90)',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
