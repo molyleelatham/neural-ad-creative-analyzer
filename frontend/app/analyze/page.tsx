@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { V3Nav } from '@/components/V3Nav';
 import { BrainViz, ROITimeline } from '@/components/BrainViz';
@@ -146,6 +146,80 @@ interface AnalysisResult {
       z_score: number;
       percentile: number;
     }>;
+  };
+  // Brain comparison results for A/B tests
+  brain_compare?: {
+    ad_a: {
+      ad_id: string;
+      T_seconds: number;
+      peak_score: number;
+      peak_second: number;
+      sustained_score: number;
+      dropoff_penalty: number;
+      composite_score: number;
+      dominant_emotion_overall: string;
+      roi_means: {
+        emotion: number;
+        language: number;
+        attention: number;
+        visual: number;
+        dmn: number;
+      };
+      timeline: Array<{
+        second: number;
+        dominant_emotion: string;
+        posterior_P_convert: number;
+        roi_emotion: number;
+        roi_language: number;
+        roi_attention: number;
+        roi_visual: number;
+        roi_dmn: number;
+      }>;
+    };
+    ad_b: {
+      ad_id: string;
+      T_seconds: number;
+      peak_score: number;
+      peak_second: number;
+      sustained_score: number;
+      dropoff_penalty: number;
+      composite_score: number;
+      dominant_emotion_overall: string;
+      roi_means: {
+        emotion: number;
+        language: number;
+        attention: number;
+        visual: number;
+        dmn: number;
+      };
+      timeline: Array<{
+        second: number;
+        dominant_emotion: string;
+        posterior_P_convert: number;
+        roi_emotion: number;
+        roi_language: number;
+        roi_attention: number;
+        roi_visual: number;
+        roi_dmn: number;
+      }>;
+    };
+    ab_result: {
+      ad_a: string;
+      ad_b: string;
+      P_A_wins_overall: number;
+      P_A_beats_B_peak_score: number;
+      P_A_beats_B_sustained_score: number;
+      P_A_beats_B_composite_score: number;
+      roi_comparison: Record<string, {
+        ad_a: number;
+        ad_b: number;
+        delta: number;
+        a_stronger: boolean;
+      }>;
+      winner: string;
+      confidence: number;
+    };
+    llm_interpretation?: string;
   };
 }
 
@@ -513,6 +587,219 @@ export default function AnalyzePage() {
             {tab === 'summary' && <SummaryTab result={result} />}
           </>
         )}
+
+        {/* A/B Comparison Section - Only show in compare mode with 2 results */}
+        {result?.mode === 'compare' && result.variants.length === 2 && (
+          <ComparisonSection result={result} />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── A/B Comparison Section ───────────────────────────────────────────────────
+function ComparisonSection({ result }: { result: AnalysisResult | null }) {
+  if (!result || result.variants.length !== 2) return null;
+  
+  const adA = result.variants[0];
+  const adB = result.variants[1];
+  const brainCompare = result.brain_compare;
+  
+  const getScore = (variant: any) => {
+    return variant.brain_single?.ad?.composite_score ?? variant.visual.scores.purchase ?? 0;
+  };
+  
+  const getWinner = () => {
+    const scoreA = getScore(adA);
+    const scoreB = getScore(adB);
+    return scoreA > scoreB ? adA : adB;
+  };
+  
+  const winner = getWinner();
+  const scoreA = getScore(adA);
+  const scoreB = getScore(adB);
+  const winnerIsA = winner.variant_id === adA.variant_id;
+  
+  return (
+    <div style={{
+      background: 'white', borderRadius: 20,
+      border: '1px solid oklch(0.92 0.005 90)',
+      boxShadow: '0 8px 24px -8px rgba(0,0,0,0.05)',
+      overflow: 'hidden', marginBottom: 24,
+    }}>
+      {/* Header */}
+      <div style={{
+        padding: '24px 32px',
+        background: `linear-gradient(135deg, oklch(0.97 0.008 45), white)`,
+        borderBottom: '1px solid oklch(0.92 0.005 90)',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <h2 style={{
+              fontFamily: 'var(--v3-font-serif)',
+              fontSize: 28, fontWeight: 500, margin: 0,
+              color: 'var(--v3-ink)',
+            }}>
+              A/B Test Results
+            </h2>
+            <p style={{ margin: '4px 0 0 0', fontSize: 14, color: 'var(--v3-ink-2)' }}>
+              Head-to-head comparison of both creatives
+            </p>
+          </div>
+          <div style={{
+            padding: '12px 20px',
+            background: winnerIsA ? 'oklch(0.98 0.08 45)' : 'oklch(0.98 0.08 215)',
+            borderRadius: 12,
+            border: `1px solid ${winnerIsA ? 'oklch(0.85 0.08 45)' : 'oklch(0.85 0.08 215)'}`,
+          }}>
+            <div style={{ fontSize: 12, color: 'var(--v3-ink-3)', marginBottom: 4 }}>Winner</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--v3-ink)' }}>
+              {winnerIsA ? 'Variant A' : 'Variant B'}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Comparison Metrics */}
+      <div style={{ padding: 32 }}>
+        {/* Overall Scores */}
+        <div style={{ marginBottom: 32 }}>
+          <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 20, fontWeight: 500, margin: '0 0 20px' }}>
+            Overall Performance
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
+            {/* Variant A */}
+            <div style={{
+              padding: 20, borderRadius: 12,
+              background: winnerIsA ? 'oklch(0.98 0.08 45 / 0.1)' : 'oklch(0.99 0.005 90)',
+              border: `1px solid ${winnerIsA ? 'oklch(0.85 0.08 45 / 0.3)' : 'oklch(0.92 0.005 90)'}`,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--v3-ink)' }}>Variant A</span>
+                {winnerIsA && (
+                  <span style={{ fontSize: 11, color: 'oklch(0.6 0.08 45)', fontWeight: 600 }}>🏆 WINNER</span>
+                )}
+              </div>
+              <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--v3-ink)', marginBottom: 8 }}>
+                {scoreA.toFixed(1)}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--v3-ink-3)' }}>
+                Composite Score
+              </div>
+            </div>
+            
+            {/* Variant B */}
+            <div style={{
+              padding: 20, borderRadius: 12,
+              background: !winnerIsA ? 'oklch(0.98 0.08 215 / 0.1)' : 'oklch(0.99 0.005 90)',
+              border: `1px solid ${!winnerIsA ? 'oklch(0.85 0.08 215 / 0.3)' : 'oklch(0.92 0.005 90)'}`,
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--v3-ink)' }}>Variant B</span>
+                {!winnerIsA && (
+                  <span style={{ fontSize: 11, color: 'oklch(0.6 0.08 215)', fontWeight: 600 }}>🏆 WINNER</span>
+                )}
+              </div>
+              <div style={{ fontSize: 32, fontWeight: 600, color: 'var(--v3-ink)', marginBottom: 8 }}>
+                {scoreB.toFixed(1)}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--v3-ink-3)' }}>
+                Composite Score
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Detailed Metrics Comparison */}
+        <div style={{ marginBottom: 32 }}>
+          <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 20, fontWeight: 500, margin: '0 0 20px' }}>
+            Detailed Metrics
+          </h3>
+          <div style={{ display: 'grid', gap: 12 }}>
+            {/* Visual Scores */}
+            <div style={{ padding: 16, background: 'oklch(0.99 0.005 90)', borderRadius: 8 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--v3-ink)', marginBottom: 12 }}>Visual Scores</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16, fontSize: 13 }}>
+                <div style={{ color: 'var(--v3-ink-2)' }}>Metric</div>
+                <div style={{ textAlign: 'center', color: 'var(--v3-ink-2)' }}>Variant A</div>
+                <div style={{ textAlign: 'center', color: 'var(--v3-ink-2)' }}>Variant B</div>
+                
+                {(['purchase', 'engagement', 'virality', 'clarity'] as const).map(metric => (
+                  <React.Fragment key={metric}>
+                    <div style={{ textTransform: 'capitalize', color: 'var(--v3-ink)' }}>{metric}</div>
+                    <div style={{ textAlign: 'center', fontWeight: 600 }}>
+                      {adA.visual.scores[metric]?.toFixed(1) ?? 'N/A'}
+                    </div>
+                    <div style={{ textAlign: 'center', fontWeight: 600 }}>
+                      {adB.visual.scores[metric]?.toFixed(1) ?? 'N/A'}
+                    </div>
+                  </React.Fragment>
+                ))}
+              </div>
+            </div>
+
+            {/* Brain Scores (if available) */}
+            {adA.brain_single?.ad && adB.brain_single?.ad && (
+              <div style={{ padding: 16, background: 'oklch(0.99 0.005 90)', borderRadius: 8 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--v3-ink)', marginBottom: 12 }}>Brain Scores</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 16, fontSize: 13 }}>
+                  <div style={{ color: 'var(--v3-ink-2)' }}>Metric</div>
+                  <div style={{ textAlign: 'center', color: 'var(--v3-ink-2)' }}>Variant A</div>
+                  <div style={{ textAlign: 'center', color: 'var(--v3-ink-2)' }}>Variant B</div>
+                  
+                  {(['peak_score', 'sustained_score', 'composite_score'] as const).map(metric => (
+                    <React.Fragment key={metric}>
+                      <div style={{ textTransform: 'capitalize', color: 'var(--v3-ink)' }}>
+                        {metric.replace('_', ' ')}
+                      </div>
+                      <div style={{ textAlign: 'center', fontWeight: 600 }}>
+                        {adA.brain_single?.ad?.[metric]?.toFixed(3) ?? 'N/A'}
+                      </div>
+                      <div style={{ textAlign: 'center', fontWeight: 600 }}>
+                        {adB.brain_single?.ad?.[metric]?.toFixed(3) ?? 'N/A'}
+                      </div>
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Brain Comparison Results (if available) */}
+            {brainCompare && (
+              <div style={{ padding: 16, background: 'oklch(0.98 0.04 180 / 0.1)', borderRadius: 8, border: '1px solid oklch(0.96 0.04 180 / 0.2)' }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--v3-ink)', marginBottom: 12 }}>
+                  🧠 Statistical Analysis
+                </div>
+                <div style={{ fontSize: 13, lineHeight: 1.5 }}>
+                  <div><strong>Winner:</strong> {brainCompare.ab_result.winner} (Confidence: {(brainCompare.ab_result.confidence * 100).toFixed(1)}%)</div>
+                  <div><strong>Probability A wins:</strong> {(brainCompare.ab_result.P_A_wins_overall * 100).toFixed(1)}%</div>
+                  <div style={{ marginTop: 8, fontSize: 12, color: 'var(--v3-ink-2)' }}>
+                    {brainCompare.llm_interpretation || 'No AI interpretation available.'}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Recommendation */}
+        <div style={{
+          padding: 20, borderRadius: 12,
+          background: `linear-gradient(135deg, oklch(0.98 0.08 45 / 0.1), oklch(0.98 0.08 215 / 0.1))`,
+          border: '1px solid oklch(0.92 0.005 90)',
+        }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--v3-ink)', marginBottom: 8 }}>
+            💡 Recommendation
+          </div>
+          <div style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--v3-ink)' }}>
+            {winnerIsA 
+              ? `Variant A outperforms Variant B with a composite score of ${scoreA.toFixed(1)} vs ${scoreB.toFixed(1)}. 
+                 Proceed with Variant A for production.`
+              : `Variant B outperforms Variant A with a composite score of ${scoreB.toFixed(1)} vs ${scoreA.toFixed(1)}. 
+                 Proceed with Variant B for production.`
+            }
+          </div>
+        </div>
       </div>
     </div>
   );
