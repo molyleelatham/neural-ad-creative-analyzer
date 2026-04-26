@@ -267,29 +267,54 @@ def _normalize_segments(raw: list[dict[str, Any]]) -> list[AdSegment]:
             )
 
         # Small synonym map to keep the UI readable/consistent.
-        synonyms: dict[str, str] = {
-            "person": "person",
-            "male": "person",
-            "female": "person",
-            "man": "person",
-            "woman": "person",
-            "logo": "brand_logo",
-            "brand": "brand_logo",
-            "brand_logo": "brand_logo",
-            "product": "product",
-            "pack": "product",
-            "packshot": "product",
-            "headline": "headline_text",
-            "headline_text": "headline_text",
-            "text": "headline_text",
-            "cta": "cta_button",
-            "button": "cta_button",
-            "cta_button": "cta_button",
-            "background": "background",
-            "bg": "background",
+        synonyms: dict[str, tuple[str, str]] = {
+            "person": ("person", "attention"),
+            "male": ("person", "attention"),
+            "female": ("person", "attention"),
+            "man": ("person", "attention"),
+            "woman": ("person", "attention"),
+            "face": ("person", "attention"),
+            "logo": ("brand_logo", "trust"),
+            "brand": ("brand_logo", "trust"),
+            "brand_logo": ("brand_logo", "trust"),
+            "product": ("product_shot", "clarity"),
+            "pack": ("product_shot", "clarity"),
+            "packshot": ("product_shot", "clarity"),
+            "headline": ("headline_text", "attention"),
+            "headline_text": ("headline_text", "attention"),
+            "text": ("headline_text", "attention"),
+            "cta": ("cta_button", "urgency"),
+            "button": ("cta_button", "urgency"),
+            "cta_button": ("cta_button", "urgency"),
+            "background": ("background", "clarity"),
+            "bg": ("background", "clarity"),
+            "price": ("price_offer", "urgency"),
+            "offer": ("price_offer", "urgency"),
         }
-        normalized = synonyms.get(key, key)
-        return normalized, None, None, None
+        
+        # Default pillar mapping for common elements
+        default_pillars: dict[str, str] = {
+            "person": "attention",
+            "face": "attention", 
+            "logo": "trust",
+            "brand": "trust",
+            "product": "clarity",
+            "headline": "attention",
+            "text": "attention",
+            "cta": "urgency",
+            "button": "urgency",
+            "background": "clarity",
+            "price": "urgency",
+            "offer": "urgency",
+        }
+        
+        if key in synonyms:
+            label, pillar = synonyms[key]
+            return label, None, pillar, None
+        else:
+            # Fallback: use default pillar mapping
+            pillar = default_pillars.get(key, "attention")  # Default to attention
+            return key, None, pillar, None
 
     def _polygon_area(points: list[tuple[float, float]]) -> float:
         # Shoelace formula (absolute area / 2).
