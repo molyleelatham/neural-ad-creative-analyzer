@@ -92,52 +92,27 @@ async def enrich_comparison_narrative(
         model_name,
         output_type=CompareNarrative,
         instructions=(
-            "You are a neuro-marketing analyst for Arcanalytics. You receive detailed analysis data from both computer vision models and brain models. "
-            "Your task is to provide a UNIFIED analysis that synthesizes insights from BOTH the CV and brain data into ONE cohesive summary.\n\n"
-            "CV Data Includes: Visual segmentation, element weights, pillar scores, brand detection, CTA visibility, visual hierarchy.\n"
-            "Brain Data Includes: Neural activation patterns, ROI engagement, limbic system response, neuromarketing pillars, emotional/cognitive processing.\n\n"
-            "IMPORTANT: Do NOT separate these into different sections. Create ONE unified narrative that weaves together insights from both models. "
-            "For example: 'The CV model shows strong brand prominence (18% visual weight) which correlates with the brain model's high hippocampus activation (0.082), indicating effective brand memory encoding.'\n\n"
-            "Your unified analysis should:\n"
-            "- Connect specific CV findings with corresponding brain responses\n"
-            "- Explain how visual elements drive neural activation patterns\n"
-            "- Identify which combinations of visual and neural factors drive performance\n"
-            "- For comparisons: Explain which creative wins based on the combined CV+brain evidence\n\n"
-            "CRITICAL: Always reference specific data points from BOTH models. Use actual scores, percentages, and activation values. "
-            "Show how the visual and neural data tell a complete story together.\n\n"
-            "Recommendations should be actionable improvements based on your unified analysis of both model outputs."
+            "You are a neuro-marketing analyst. Create ONE unified analysis that synthesizes CV and brain data into a cohesive summary.\n\n"
+            "CV data: visual segmentation, element weights, pillar scores, brand/CTA visibility.\n"
+            "Brain data: neural activation, ROI engagement, limbic response, neuromarketing pillars.\n\n"
+            "Connect specific CV findings with brain responses. Example: 'Brand prominence (18% visual weight) correlates with high hippocampus activation (0.082), indicating strong memory encoding.'\n\n"
+            "Requirements:\n"
+            "- Reference actual data points from BOTH models (scores, percentages, activation values)\n"
+            "- Explain how visual elements drive neural patterns\n"
+            "- Identify winning creative based on combined evidence\n"
+            "- Provide actionable recommendations\n\n"
+            "Keep it concise but data-rich. Show how visual and neural data tell one complete story."
         ),
     )
 
-    # Enhanced payload with detailed CV and brain model evaluation data
+    # Streamlined payload with essential context
     payload = {
         "mode": "single" if len(variants_payload) == 1 else "compare",
         "objective": objective_value,
-        "audience_segment": audience_value,
-        "overall_winner": overall_winner,
+        "audience": audience_value,
+        "winner": overall_winner,
         "objective_winner": objective_winner,
-        "variants": variants_payload,
-        "evaluation_context": {
-            "cv_model_focus": [
-                "visual_segmentation_accuracy",
-                "element_weight_distribution", 
-                "pillar_score_effectiveness",
-                "visual_hierarchy_analysis",
-                "brand_element_detection"
-            ],
-            "brain_model_focus": [
-                "limbic_system_activation",
-                "neural_engagement_patterns",
-                "roi_activation_strength",
-                "neuromarketing_pillar_performance",
-                "emotional_cognitive_balance"
-            ],
-            "evaluation_criteria": {
-                "cv_effectiveness": "How well visual elements support the campaign objective",
-                "brain_effectiveness": "How neural patterns indicate persuasive impact",
-                "cross_model_consistency": "Alignment between visual and neural measurements"
-            }
-        }
+        "variants": variants_payload
     }
 
     try:
@@ -149,8 +124,7 @@ async def enrich_comparison_narrative(
         # IMPORTANT: FastAPI runs inside an event loop; using run_sync here will raise
         # "RuntimeError: This event loop is already running". Use the async runner instead.
         result = await agent.run(
-            "Produce explanation and recommendations for this comparison snapshot:\n"
-            f"{json.dumps(payload, indent=2)}"
+            f"Analyze: {json.dumps(payload, indent=2)}"
         )
         return result.output
     except Exception as exc:
