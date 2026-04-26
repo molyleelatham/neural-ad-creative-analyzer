@@ -254,7 +254,9 @@ class DatabaseManager:
                 print("✅ Database connection pool initialized successfully")
             except Exception as e:
                 print(f"⚠️  Failed to initialize database connection: {e}")
-                raise
+                print("💡 App will continue without database storage (analysis results won't be saved)")
+                # Don't raise - let app continue without database
+                self.config.asyncpg_url = None
     
     async def close(self):
         """Close database connection pool"""
