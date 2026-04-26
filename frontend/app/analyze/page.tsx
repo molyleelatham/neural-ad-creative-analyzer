@@ -584,7 +584,7 @@ export default function AnalyzePage() {
               ))}
             </div>
 
-            {tab === 'vision'  && <VisionTab  result={result} />}
+            {tab === 'vision'  && <VisionTab  result={result} objective={objective} />}
             {tab === 'brain'   && <BrainTab   result={result} />}
             {tab === 'summary' && <SummaryTab result={result} />}
             </>
@@ -1052,8 +1052,7 @@ function ComparisonSection({ result, fileA, fileB }: {
 }
 
 // ── Vision tab ──────────────────────────────────────────────────────────────
-function VisionTab({ result }: { result: AnalysisResult | null }) {
-  const objective = result?.variants?.[0]?.visual?.objective || 'purchase';
+function VisionTab({ result, objective }: { result: AnalysisResult | null; objective: CampaignObjective }) {
   const segs = result?.variants?.[0]?.visual.segments ?? [
     { label: 'Person / face', confidence: 0.94, visual_weight_pct: 38, pillar: 'Attention' },
     { label: 'Headline text', confidence: 0.91, visual_weight_pct: 22, pillar: 'Clarity' },
