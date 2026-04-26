@@ -1426,15 +1426,60 @@ function VisionTab({ result, objective }: { result: AnalysisResult | null; objec
 
   const goalInsights = getGoalSpecificInsights();
 
+  // Group segments by pillars
+  const segmentsByPillar = segs.reduce((acc, segment) => {
+    const pillar = segment.pillar || 'uncategorized';
+    if (!acc[pillar]) {
+      acc[pillar] = [];
+    }
+    acc[pillar].push(segment);
+    return acc;
+  }, {} as Record<string, typeof segs>);
+
+  const getPillarIcon = (pillar: string) => {
+    switch (pillar?.toLowerCase()) {
+      case 'attention': return '◉';
+      case 'clarity': return '◈';
+      case 'trust': return '◈';
+      case 'urgency': return '▲';
+      case 'emotion': return '●';
+      case 'value': return '◆';
+      default: return '○';
+    }
+  };
+
+  const getElementIcon = (label: string) => {
+    if (label.toLowerCase().includes('headline') || label.toLowerCase().includes('text')) return '▬';
+    if (label.toLowerCase().includes('call to action') || label.toLowerCase().includes('cta')) return '▶';
+    if (label.toLowerCase().includes('person') || label.toLowerCase().includes('face')) return '◉';
+    if (label.toLowerCase().includes('product')) return '▢';
+    if (label.toLowerCase().includes('brand') || label.toLowerCase().includes('logo')) return '◆';
+    if (label.toLowerCase().includes('background')) return '▭';
+    if (label.toLowerCase().includes('price') || label.toLowerCase().includes('offer')) return '◈';
+    return '○';
+  };
+
+  const getPillarColor = (pillar: string) => {
+    switch (pillar?.toLowerCase()) {
+      case 'attention': return 'oklch(0.65 0.13 30)';
+      case 'clarity': return 'oklch(0.65 0.13 200)';
+      case 'trust': return 'oklch(0.65 0.13 140)';
+      case 'urgency': return 'oklch(0.65 0.13 10)';
+      case 'emotion': return 'oklch(0.65 0.13 340)';
+      case 'value': return 'oklch(0.65 0.13 60)';
+      default: return 'oklch(0.65 0.008 90)';
+    }
+  };
+
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 24 }}>
       <div style={card()}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 20 }}>
-          <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 24, fontWeight: 400, margin: 0 }}>Visual elements</h3>
+          <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 24, fontWeight: 400, margin: 0 }}>Marketing Pillars</h3>
           <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
             {segs.length > 0 && (
               <span style={{ fontSize: 11, fontWeight: 500, color: ACCENT, background: 'oklch(0.96 0.04 180)', padding: '4px 10px', borderRadius: 999 }}>
-                {segs.length} detected
+                {segs.length} elements
               </span>
             )}
             <span style={{ fontSize: 10, color: 'var(--v3-ink-3)', background: 'oklch(0.985 0.003 90)', padding: '3px 8px', borderRadius: 999, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -1442,99 +1487,160 @@ function VisionTab({ result, objective }: { result: AnalysisResult | null; objec
             </span>
           </div>
         </div>
-        {segs.length > 0 ? segs.map((s, i) => {
-          const isImportant = goalInsights.importantElements.some(el => 
-            s.label.toLowerCase().includes(el.toLowerCase())
-          );
-          const weightRounded = Math.round(s.visual_weight_pct);
-          const confidenceRounded = Math.round(s.confidence * 100);
-          
-          const getPillarIcon = (pillar: string) => {
-            switch (pillar?.toLowerCase()) {
-              case 'attention': return '👁️';
-              case 'clarity': return '📝';
-              case 'trust': return '🛡️';
-              case 'urgency': return '⚡';
-              case 'emotion': return '❤️';
-              case 'value': return '💎';
-              default: return '📊';
+        {segs.length > 0 ? (() => {
+          // Group segments by pillar
+          const segmentsByPillar = segs.reduce((acc, segment) => {
+            const pillar = segment.pillar || 'Uncategorized';
+            if (!acc[pillar]) {
+              acc[pillar] = [];
             }
-          };
+            acc[pillar].push(segment);
+            return acc;
+          }, {} as Record<string, typeof segs>);
 
-          const getElementIcon = (label: string) => {
-            if (label.toLowerCase().includes('headline') || label.toLowerCase().includes('text')) return '📰';
-            if (label.toLowerCase().includes('call to action') || label.toLowerCase().includes('cta')) return '🎯';
-            if (label.toLowerCase().includes('person') || label.toLowerCase().includes('face')) return '👤';
-            if (label.toLowerCase().includes('product')) return '📦';
-            if (label.toLowerCase().includes('brand') || label.toLowerCase().includes('logo')) return '🏷️';
-            if (label.toLowerCase().includes('background')) return '🎨';
-            if (label.toLowerCase().includes('price') || label.toLowerCase().includes('offer')) return '💰';
-            return '📋';
-          };
-          
-          return (
-            <div key={i} style={{
-              display: 'grid', gridTemplateColumns: '1fr 1fr 90px',
-              alignItems: 'center', padding: '14px 0', gap: 16,
-              borderTop: '1px solid oklch(0.92 0.008 90)',
-              background: isImportant ? 'oklch(0.985 0.003 90)' : 'transparent',
-              borderLeft: isImportant ? `3px solid ${ACCENT}` : 'none',
-              paddingLeft: isImportant ? '13px' : '16px',
-            }}>
-              <div>
-                <div style={{ 
-                  fontSize: 14, 
-                  fontWeight: isImportant ? 600 : 500, 
-                  color: isImportant ? ACCENT : 'var(--v3-ink)',
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  marginBottom: 2
-                }}>
-                  <span style={{ fontSize: 12 }}>{getElementIcon(s.label)}</span>
-                  {s.label}
-                  {isImportant && (
-                    <span style={{ 
-                      fontSize: 9, 
-                      background: ACCENT, 
-                      color: 'white', 
-                      padding: '2px 5px', 
-                      borderRadius: 999,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.05em'
-                    }}>
-                      Key
-                    </span>
-                  )}
-                </div>
-                {s.pillar && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ fontSize: 10 }}>{getPillarIcon(s.pillar)}</span>
-                    <span className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', textTransform: 'uppercase', fontWeight: 600 }}>
-                      {s.pillar}
-                    </span>
-                  </div>
-                )}
-              </div>
-              <div style={{ height: 8, background: 'oklch(0.92 0.008 90)', borderRadius: 999, overflow: 'hidden' }}>
+          const pillarOrder = ['attention', 'clarity', 'trust', 'urgency', 'emotion', 'value', 'Uncategorized'];
+
+          return pillarOrder.map(pillar => {
+            const pillarSegments = segmentsByPillar[pillar] || [];
+            if (pillarSegments.length === 0) return null;
+
+            const getPillarIcon = (pillarName: string) => {
+              switch (pillarName?.toLowerCase()) {
+                case 'attention': return '◉';
+                case 'clarity': return '◈';
+                case 'trust': return '◈';
+                case 'urgency': return '▲';
+                case 'emotion': return '●';
+                case 'value': return '◆';
+                default: return '○';
+              }
+            };
+
+            const getElementIcon = (label: string) => {
+              if (label.toLowerCase().includes('headline') || label.toLowerCase().includes('text')) return '▬';
+              if (label.toLowerCase().includes('call to action') || label.toLowerCase().includes('cta')) return '▶';
+              if (label.toLowerCase().includes('person') || label.toLowerCase().includes('face')) return '◉';
+              if (label.toLowerCase().includes('product')) return '▢';
+              if (label.toLowerCase().includes('brand') || label.toLowerCase().includes('logo')) return '◆';
+              if (label.toLowerCase().includes('background')) return '▭';
+              if (label.toLowerCase().includes('price') || label.toLowerCase().includes('offer')) return '◈';
+              return '○';
+            };
+
+            return (
+              <div key={pillar} style={{ marginBottom: 32 }}>
+                {/* Pillar header */}
                 <div style={{
-                  width: `${Math.min(100, weightRounded * 2.5)}%`, height: '100%',
-                  background: isImportant 
-                    ? `linear-gradient(90deg, ${ACCENT}, oklch(0.65 0.13 200))`
-                    : `linear-gradient(90deg, oklch(0.70 0.008 90), oklch(0.65 0.13 200))`,
-                  borderRadius: 999,
-                  boxShadow: isImportant ? '0 0 8px rgba(0, 142, 180, 0.3)' : 'none'
-                }} />
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 22, fontWeight: isImportant ? 600 : 400 }}>
-                  {weightRounded}<span style={{ fontSize: 12, color: 'var(--v3-ink-3)' }}>%</span>
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginBottom: 16,
+                  padding: '12px 16px',
+                  background: `linear-gradient(135deg, ${PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.9 0.03 90)'}15, transparent)`,
+                  borderRadius: 8,
+                  border: `1px solid ${PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.8 0.03 90)'}30`,
+                }}>
+                  <span style={{
+                    fontSize: 24,
+                    color: PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.6 0.05 90)',
+                  }}>
+                    {getPillarIcon(pillar)}
+                  </span>
+                  <div>
+                    <div style={{
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.5 0.05 90)',
+                      textTransform: 'capitalize',
+                      marginBottom: 2,
+                    }}>
+                      {pillar}
+                    </div>
+                    <div style={{
+                      fontSize: 10,
+                      color: 'var(--v3-ink-3)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                    }}>
+                      {pillarSegments.length} element{pillarSegments.length !== 1 ? 's' : ''}
+                    </div>
+                  </div>
                 </div>
-                <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)' }}>
-                  {confidenceRounded}% conf
+
+                {/* Segments for this pillar */}
+                <div style={{ paddingLeft: 20 }}>
+                  {pillarSegments.map((s, i) => {
+                    const isImportant = goalInsights.importantElements.some(el => 
+                      s.label.toLowerCase().includes(el.toLowerCase())
+                    );
+                    const weightRounded = Math.round(s.visual_weight_pct);
+                    const confidenceRounded = Math.round(s.confidence * 100);
+
+                    return (
+                      <div key={i} style={{
+                        display: 'grid', gridTemplateColumns: '1fr 1fr 90px',
+                        alignItems: 'center', padding: '14px 0', gap: 16,
+                        borderTop: '1px solid oklch(0.92 0.008 90)',
+                        background: isImportant ? 'oklch(0.985 0.003 90)' : 'transparent',
+                        borderLeft: isImportant ? `3px solid ${ACCENT}` : 'none',
+                        paddingLeft: isImportant ? '13px' : '16px',
+                      }}>
+                        <div>
+                          <div style={{ 
+                            fontSize: 14, 
+                            fontWeight: isImportant ? 600 : 500, 
+                            color: isImportant ? ACCENT : 'var(--v3-ink)',
+                            display: 'flex', alignItems: 'center', gap: 6,
+                            marginBottom: 2
+                          }}>
+                            <span style={{ fontSize: 12 }}>{getElementIcon(s.label)}</span>
+                            {s.label}
+                            {isImportant && (
+                              <span style={{ 
+                                fontSize: 9, 
+                                background: ACCENT, 
+                                color: 'white', 
+                                padding: '2px 5px', 
+                                borderRadius: 999,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.05em'
+                              }}>
+                                Key
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', textTransform: 'capitalize', fontWeight: 600 }}>
+                              {s.segment_type?.replace(/_/g, ' ') || 'element'}
+                            </span>
+                          </div>
+                        </div>
+                        <div style={{ height: 8, background: 'oklch(0.92 0.008 90)', borderRadius: 999, overflow: 'hidden' }}>
+                          <div style={{
+                            width: `${Math.min(100, weightRounded * 2.5)}%`, height: '100%',
+                            background: isImportant 
+                              ? `linear-gradient(90deg, ${ACCENT}, oklch(0.65 0.13 200))`
+                              : `linear-gradient(90deg, ${PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.70 0.008 90)'}, oklch(0.65 0.13 200))`,
+                            borderRadius: 999,
+                            boxShadow: isImportant ? '0 0 8px rgba(0, 142, 180, 0.3)' : 'none'
+                          }} />
+                        </div>
+                        <div style={{ textAlign: 'right' }}>
+                          <div style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 22, fontWeight: isImportant ? 600 : 400 }}>
+                            {weightRounded}<span style={{ fontSize: 12, color: 'var(--v3-ink-3)' }}>%</span>
+                          </div>
+                          <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)' }}>
+                            {confidenceRounded}% conf
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          );
-        }) : (
+            );
+          });
+        })() : (
           <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--v3-ink-3)', fontSize: 13 }}>
             No segment data returned
           </div>
