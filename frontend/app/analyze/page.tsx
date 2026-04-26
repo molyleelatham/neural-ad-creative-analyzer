@@ -30,6 +30,28 @@ function preWarmModalApp(): Promise<boolean> {
   return modalHealthPromise;
 }
 
+// ── Roboflow Health Check Function ─────────────────────────────────────────────
+let roboflowHealthPromise: Promise<boolean> | null = null;
+
+async function checkRoboflowHealth(): Promise<boolean> {
+  try {
+    const response = await fetch(`${BACKEND}/roboflow/health`);
+    const data = await response.json();
+    return response.ok && data.status === 'ok';
+  } catch (error) {
+    console.log('Roboflow health check failed (app will still work with mock analysis):', error);
+    return false;
+  }
+}
+
+// Pre-warm Roboflow on page load
+function preWarmRoboflow(): Promise<boolean> {
+  if (!roboflowHealthPromise) {
+    roboflowHealthPromise = checkRoboflowHealth();
+  }
+  return roboflowHealthPromise;
+}
+
 // ── Types matching backend ──────────────────────────────────────────────────
 type CampaignObjective = 'clarity' | 'purchase' | 'engagement' | 'virality';
 type AudienceSegment = 'budget_sensitive' | 'social_proof_driven' | 'viral_share_oriented' | 'premium_brand_oriented';
@@ -332,6 +354,7 @@ export default function AnalyzePage() {
   const [result, setResult]         = useState<AnalysisResult | null>(null);
   const [error, setError]           = useState<string | null>(null);
   const [modalStatus, setModalStatus] = useState<'checking' | 'ready' | 'offline'>('checking');
+  const [roboflowStatus, setRoboflowStatus] = useState<'checking' | 'ready' | 'offline'>('checking');
   const [analysisStatus, setAnalysisStatus] = useState<{
     stage: 'idle' | 'uploading' | 'sam3' | 'tribev2' | 'narrative' | 'complete' | 'error';
     progress: number;
@@ -358,17 +381,33 @@ export default function AnalyzePage() {
     }
   }, [fileA, fileB, loading]);
 
-  // Pre-warm Modal app on page load to prevent cold starts
+  // Pre-warm Modal app and Roboflow on page load to prevent cold starts
   useEffect(() => {
-    // Start the health check in background when page loads
+    // Start the health checks in background when page loads
     setModalStatus('checking');
-    preWarmModalApp().then(isHealthy => {
-      if (isHealthy) {
+    setRoboflowStatus('checking');
+    
+    // Check both services in parallel
+    Promise.all([
+      preWarmModalApp(),
+      preWarmRoboflow()
+    ]).then(([modalHealthy, roboflowHealthy]) => {
+      // Modal status
+      if (modalHealthy) {
         console.log('✅ Modal app pre-warmed and ready');
         setModalStatus('ready');
       } else {
         console.log('⚠️ Modal app not available (will work without brain analysis)');
         setModalStatus('offline');
+      }
+      
+      // Roboflow status
+      if (roboflowHealthy) {
+        console.log('✅ Roboflow SAM3 pre-warmed and ready');
+        setRoboflowStatus('ready');
+      } else {
+        console.log('⚠️ Roboflow SAM3 not available (will work with mock analysis)');
+        setRoboflowStatus('offline');
       }
     });
   }, []); // Run once on page load
@@ -562,10 +601,17 @@ const AnalysisStatus = () => {
     if (!fileA) return;
     setLoading(true); setError(null); setResult(null);
     
-    // Check Modal status and warn if offline
+    // Check service status and warn if offline
     if (modalStatus === 'offline') {
       console.log('⚠️ Proceeding without brain analysis (Modal app unavailable)');
     } else if (modalStatus === 'checking') {
+      // Give it a moment to finish checking
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+    
+    if (roboflowStatus === 'offline') {
+      console.log('⚠️ Proceeding with mock visual analysis (Roboflow unavailable)');
+    } else if (roboflowStatus === 'checking') {
       // Give it a moment to finish checking
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
@@ -776,26 +822,54 @@ const AnalysisStatus = () => {
               {loading ? 'Analyzing…' : 'Run analysis →'}
             </button>
             
-            {/* Modal Status Indicator */}
-            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              {modalStatus === 'checking' && (
-                <>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'oklch(0.65 0.08 60)', animation: 'pulse 1.5s infinite' }} />
-                  <span style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>Warming up brain analysis...</span>
-                </>
-              )}
-              {modalStatus === 'ready' && (
-                <>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'oklch(0.6 0.12 140)' }} />
-                  <span style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>Brain analysis ready</span>
-                </>
-              )}
-              {modalStatus === 'offline' && (
-                <>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'oklch(0.65 0.08 25)' }} />
-                  <span style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>Brain analysis unavailable</span>
-                </>
-              )}
+            {/* Service Status Indicators */}
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              {/* Roboflow Status */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                {roboflowStatus === 'checking' && (
+                  <>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'oklch(0.65 0.08 60)', animation: 'pulse 1.5s infinite' }} />
+                    <span style={{ fontSize: 10, color: 'var(--v3-ink-3)' }}>Visual analysis...</span>
+                  </>
+                )}
+                {roboflowStatus === 'ready' && (
+                  <>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'oklch(0.6 0.12 140)' }} />
+                    <span style={{ fontSize: 10, color: 'var(--v3-ink-3)' }}>Visual ready</span>
+                  </>
+                )}
+                {roboflowStatus === 'offline' && (
+                  <>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'oklch(0.65 0.08 25)' }} />
+                    <span style={{ fontSize: 10, color: 'var(--v3-ink-3)' }}>Visual offline</span>
+                  </>
+                )}
+              </div>
+              
+              {/* Separator */}
+              <div style={{ width: 1, height: 12, background: 'oklch(0.92 0.005 90)' }} />
+              
+              {/* Modal Status */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                {modalStatus === 'checking' && (
+                  <>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'oklch(0.65 0.08 60)', animation: 'pulse 1.5s infinite' }} />
+                    <span style={{ fontSize: 10, color: 'var(--v3-ink-3)' }}>Brain analysis...</span>
+                  </>
+                )}
+                {modalStatus === 'ready' && (
+                  <>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'oklch(0.6 0.12 140)' }} />
+                    <span style={{ fontSize: 10, color: 'var(--v3-ink-3)' }}>Brain ready</span>
+                  </>
+                )}
+                {modalStatus === 'offline' && (
+                  <>
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'oklch(0.65 0.08 25)' }} />
+                    <span style={{ fontSize: 10, color: 'var(--v3-ink-3)' }}>Brain offline</span>
+                  </>
+                )}
+              </div>
             </div>
             
             {error && (

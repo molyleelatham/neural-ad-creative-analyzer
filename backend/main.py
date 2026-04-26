@@ -148,6 +148,17 @@ async def tribev2_health_check() -> dict:
     return result
 
 
+@app.get("/roboflow/health")
+async def roboflow_health_check() -> dict:
+    """Check Roboflow SAM3 service health. Returns 503 if unreachable."""
+    from fastapi import HTTPException
+    from agents.sam3_agent import roboflow_health_check
+    result = await roboflow_health_check()
+    if result is None:
+        raise HTTPException(status_code=503, detail="Roboflow SAM3 service unreachable or not configured.")
+    return result
+
+
 @app.post("/compare", response_model=ComparisonResult)
 async def compare(
     objective: Annotated[CampaignObjective, Form()],
