@@ -7,6 +7,29 @@ import { BrainViz } from '@/components/BrainViz';
 const ACCENT  = 'oklch(0.55 0.08 180)';
 const BACKEND = '/api';
 
+// ── Modal Health Check State ─────────────────────────────────────────────────
+let modalHealthPromise: Promise<boolean> | null = null;
+
+// ── Modal Health Check Function ───────────────────────────────────────────────
+async function checkModalHealth(): Promise<boolean> {
+  try {
+    const response = await fetch(`${BACKEND}/tribev2/health`);
+    const data = await response.json();
+    return response.ok && data.status === 'ok';
+  } catch (error) {
+    console.log('Modal health check failed (app will still work without brain analysis):', error);
+    return false;
+  }
+}
+
+// Pre-warm Modal app on page load
+function preWarmModalApp(): Promise<boolean> {
+  if (!modalHealthPromise) {
+    modalHealthPromise = checkModalHealth();
+  }
+  return modalHealthPromise;
+}
+
 // ── Types matching backend ──────────────────────────────────────────────────
 type CampaignObjective = 'clarity' | 'purchase' | 'engagement' | 'virality';
 type AudienceSegment = 'budget_sensitive' | 'social_proof_driven' | 'viral_share_oriented' | 'premium_brand_oriented';
@@ -308,6 +331,7 @@ export default function AnalyzePage() {
   const [loading, setLoading]       = useState(false);
   const [result, setResult]         = useState<AnalysisResult | null>(null);
   const [error, setError]           = useState<string | null>(null);
+  const [modalStatus, setModalStatus] = useState<'checking' | 'ready' | 'offline'>('checking');
   const [analysisStatus, setAnalysisStatus] = useState<{
     stage: 'idle' | 'uploading' | 'sam3' | 'tribev2' | 'narrative' | 'complete' | 'error';
     progress: number;
@@ -333,6 +357,21 @@ export default function AnalyzePage() {
       });
     }
   }, [fileA, fileB, loading]);
+
+  // Pre-warm Modal app on page load to prevent cold starts
+  useEffect(() => {
+    // Start the health check in background when page loads
+    setModalStatus('checking');
+    preWarmModalApp().then(isHealthy => {
+      if (isHealthy) {
+        console.log('✅ Modal app pre-warmed and ready');
+        setModalStatus('ready');
+      } else {
+        console.log('⚠️ Modal app not available (will work without brain analysis)');
+        setModalStatus('offline');
+      }
+    });
+  }, []); // Run once on page load
 
   // Export analysis function
   const exportAnalysis = async () => {
@@ -522,6 +561,14 @@ const AnalysisStatus = () => {
   const handleAnalyze = async () => {
     if (!fileA) return;
     setLoading(true); setError(null); setResult(null);
+    
+    // Check Modal status and warn if offline
+    if (modalStatus === 'offline') {
+      console.log('⚠️ Proceeding without brain analysis (Modal app unavailable)');
+    } else if (modalStatus === 'checking') {
+      // Give it a moment to finish checking
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
     
     // Reset status
     setAnalysisStatus({
@@ -728,6 +775,29 @@ const AnalysisStatus = () => {
             >
               {loading ? 'Analyzing…' : 'Run analysis →'}
             </button>
+            
+            {/* Modal Status Indicator */}
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+              {modalStatus === 'checking' && (
+                <>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'oklch(0.65 0.08 60)', animation: 'pulse 1.5s infinite' }} />
+                  <span style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>Warming up brain analysis...</span>
+                </>
+              )}
+              {modalStatus === 'ready' && (
+                <>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'oklch(0.6 0.12 140)' }} />
+                  <span style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>Brain analysis ready</span>
+                </>
+              )}
+              {modalStatus === 'offline' && (
+                <>
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'oklch(0.65 0.08 25)' }} />
+                  <span style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>Brain analysis unavailable</span>
+                </>
+              )}
+            </div>
+            
             {error && (
               <div style={{ marginTop: 12, fontSize: 13, color: 'var(--v3-bad)' }}>{error}</div>
             )}
