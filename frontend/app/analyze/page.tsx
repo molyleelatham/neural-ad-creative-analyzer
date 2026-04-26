@@ -738,6 +738,7 @@ function BrainTab({ result }: { result: AnalysisResult | null }) {
                 {region.peak_second.toFixed(1)}s
               </span>
             </div>
+            )
           })}
         </div>
 
