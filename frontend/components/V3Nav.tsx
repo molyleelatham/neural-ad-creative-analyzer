@@ -64,15 +64,14 @@ export function V3Nav({ currentPage = 'home' }: V3NavProps) {
       </nav>
 
       <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <Link href="#" style={{ fontSize: 13, color: 'var(--v3-ink-2)', textDecoration: 'none', fontWeight: 500 }}>
-          Sign in
-        </Link>
         <Link
-          href="/analyze"
+          href="https://github.com/molyleelatham/arcanalytics"
+          target="_blank"
+          rel="noopener noreferrer"
           className="v3-btn v3-btn-primary"
           style={{ fontSize: 13, padding: '10px 18px' }}
         >
-          Try it free →
+          GitHub
         </Link>
       </div>
     </header>
