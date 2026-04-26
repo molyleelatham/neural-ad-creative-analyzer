@@ -7,3 +7,4 @@ pydantic-settings==2.7.1
 logfire==4.32.1
 pydantic-ai-slim[openai,google]==1.85.0
 inference-sdk>=0.60.0
+httpx>=0.27.0
