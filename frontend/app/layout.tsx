@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Arcanalytics",
-  description: "Upload your ad. Understand your brain. Beat your competitors.",
+  description: "Upload your ad. See what stands out. Beat your competitors.",
 };
 
 export default function RootLayout({

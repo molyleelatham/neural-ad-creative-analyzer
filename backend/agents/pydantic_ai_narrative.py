@@ -94,13 +94,16 @@ async def enrich_comparison_narrative(
         instructions=(
             "You are an ad analytics strategist for Arcanalytics. "
             "You receive JSON with per-variant scores, mock neural features, and segment labels. "
-            "Explain which variant wins for the stated objective and overall, referencing the numbers given. "
+            "If variants.length == 1, write a single-ad narrative (do NOT mention winners or comparisons). "
+            "If variants.length >= 2, explain which variant wins for the stated objective and overall, referencing the numbers given. "
             "Do not invent new numeric scores. "
-            "Recommendations must be short, actionable bullets for a marketing team."
+            "Recommendations must be short, actionable bullets for a marketing team. "
+            "Never mention variants that are not present in the payload."
         ),
     )
 
     payload = {
+        "mode": "single" if len(variants_payload) == 1 else "compare",
         "objective": objective_value,
         "audience_segment": audience_value,
         "overall_winner": overall_winner,

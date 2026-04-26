@@ -9,11 +9,11 @@ export default function Home() {
             ARCANALYTICS
           </div>
           <h1 className="text-4xl font-semibold tracking-tight">
-            Upload your ad. Understand your brain. Beat your competitors.
+            Upload your ad. See what stands out. Beat your competitors.
           </h1>
           <p className="max-w-2xl text-sm text-zinc-300">
-            ArcAnalytics breaks down what your creative is doing to the human brain —
-            then gives plain-English fixes to improve performance.
+            Arcanalytics breaks down what your creative draws attention to — then gives
+            plain-English fixes to improve performance.
           </p>
         </header>
 
@@ -34,7 +34,7 @@ export default function Home() {
 
         <section className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="text-sm font-semibold">Find what the brain sees</div>
+            <div className="text-sm font-semibold">Find what viewers notice</div>
             <div className="mt-1 text-xs text-zinc-300">
               Face, CTA, logo, headline — automatically surfaced.
             </div>

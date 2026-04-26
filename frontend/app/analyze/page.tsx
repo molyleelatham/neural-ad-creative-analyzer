@@ -27,6 +27,10 @@ type NeuralFeatures = {
 
 type AdSegment = {
   label: string;
+  display_label?: string | null;
+  pillar?: string | null;
+  scoring_weight?: number | null;
+  impact_score?: number | null;
   confidence: number;
   visual_weight_pct: number;
   reasoning: string;
@@ -39,8 +43,37 @@ type VariantAnalysis = {
   neural_features: NeuralFeatures;
   segments: AdSegment[];
   segments_source?: "mock" | "sam3";
+  roboflow_raw?: Record<string, unknown> | null;
+  pillar_scores?: Record<string, number> | null;
+  pillar_breakdown?: Record<string, any> | null;
   summary: string;
 };
+
+const PILLAR_ORDER = ["Attention", "Emotion", "Trust", "Clarity", "Urgency"] as const;
+
+function factorName(f: any) {
+  return String(f?.display_name || f?.roboflow_label || "").trim() || "—";
+}
+
+function formatFactorList(fs: any[], max: number) {
+  return (fs || [])
+    .slice(0, max)
+    .map((f) => {
+      const name = factorName(f);
+      const c = Number(f?.contribution ?? 0);
+      const sign = c >= 0 ? "+" : "−";
+      return `${name} (${sign}${Math.abs(c).toFixed(1)})`;
+    })
+    .join(", ");
+}
+
+function shortExplanation(text: string) {
+  const t = (text || "").trim();
+  if (!t) return "";
+  // Grab first 1–2 sentences for a TL;DR.
+  const parts = t.split(/(?<=[.!?])\s+/).filter(Boolean);
+  return parts.slice(0, 2).join(" ");
+}
 
 type ComparisonResult = {
   objective: CampaignObjective;
@@ -50,6 +83,7 @@ type ComparisonResult = {
   objective_winner: string;
   explanation: string;
   recommendations: string[];
+  copy_mode?: "neutral" | "brain";
   narrative_source?: "template" | "llm";
   narrative_model?: string | null;
 };
@@ -69,12 +103,13 @@ function overallTenPoint(scores: VariantScore) {
   return clamp(avg / 10, 0, 10);
 }
 
-function scoreLabel(outOfTen: number) {
-  if (outOfTen >= 8.5) return "Extremely strong brain engagement";
-  if (outOfTen >= 7) return "Strong brain engagement";
+function scoreLabel(outOfTen: number, copyMode: "neutral" | "brain") {
+  const isBrain = copyMode === "brain";
+  if (outOfTen >= 8.5) return isBrain ? "Extremely strong brain engagement" : "Extremely noticeable";
+  if (outOfTen >= 7) return isBrain ? "Strong brain engagement" : "Highly noticeable";
   if (outOfTen >= 5) return "Moderate — could be stronger";
-  if (outOfTen >= 3) return "Low — brain barely notices this";
-  return "Almost invisible to the brain";
+  if (outOfTen >= 3) return isBrain ? "Low — brain barely notices this" : "Low — easy to miss";
+  return isBrain ? "Almost invisible to the brain" : "Very easy to miss";
 }
 
 function scoreColor(outOfTen: number) {
@@ -88,13 +123,28 @@ function prettyLabel(s: string) {
   const map: Record<string, string> = {
     product: "Product",
     headline: "Headline",
+    headline_text: "Headline text",
     cta: "Call to action",
+    cta_button: "Call to action",
     logo: "Brand logo",
+    brand_logo: "Brand logo",
     face: "Person / face",
+    person: "Person / face",
     background: "Background",
   };
   return map[s] ?? s.replace(/_/g, " ");
 }
+
+function segmentTitle(s: AdSegment) {
+  return (s.display_label ?? "").trim() || prettyLabel(s.label);
+}
+
+const AUDIENCE_OPTIONS: Array<{ value: AudienceSegment; label: string; description: string }> = [
+  { value: "budget_sensitive", label: "Budget sensitive", description: "Responds to value, savings, and clear offers." },
+  { value: "social_proof_driven", label: "Social proof driven", description: "Trusts reviews, testimonials, and popularity cues." },
+  { value: "viral_share_oriented", label: "Viral / share oriented", description: "Engages with novelty, humor, and shareability." },
+  { value: "premium_brand_oriented", label: "Premium brand oriented", description: "Prefers quality, design, and brand credibility." },
+];
 
 function abFromVariantId(variantId: string) {
   if (variantId === "v1") return "A";
@@ -102,7 +152,7 @@ function abFromVariantId(variantId: string) {
   return variantId.toUpperCase();
 }
 
-function BrainLoader() {
+function AnalysisLoader() {
   const messages = useMemo(
     () => [
       "Scanning creative composition…",
@@ -196,9 +246,7 @@ function BrainLoader() {
             }}
           >
             <div className="flex items-center justify-between gap-4">
-              <div className="text-sm font-semibold text-white">
-                Arcanalytics Brain
-              </div>
+              <div className="text-sm font-semibold text-white">Arcanalytics Analysis</div>
               <div className="text-[11px] text-zinc-300">
                 computing comparison
               </div>
@@ -374,11 +422,9 @@ export default function AnalyzePage() {
       fd.append("objective", objective);
       fd.append("audience_segment", audienceSegment);
 
-      // Backend contract is 2–5 files. For SINGLE, send the same file twice.
       if (mode === "single") {
         const f = files[0];
         if (!f) throw new Error("No file selected.");
-        fd.append("files", f);
         fd.append("files", f);
       } else {
         for (const f of files) fd.append("files", f);
@@ -419,7 +465,7 @@ export default function AnalyzePage() {
 
   return (
     <div className="min-h-screen bg-black font-sans text-zinc-50">
-      {loading ? <BrainLoader /> : null}
+      {loading ? <AnalysisLoader /> : null}
       <div
         className="pointer-events-none fixed inset-0 -z-10"
         aria-hidden="true"
@@ -436,11 +482,8 @@ export default function AnalyzePage() {
                 AD ANALYSIS
               </div>
               <h1 className="mt-1 text-2xl font-semibold tracking-tight">
-                Upload your ad. Understand your brain.
+                Upload your ad. Understand what stands out.
               </h1>
-              <p className="mt-1 text-xs text-zinc-400">
-                Backend: <span className="font-mono">{apiBase}</span>
-              </p>
             </div>
             <div className="hidden sm:flex items-center gap-2 text-[11px] text-zinc-400">
               <span className="rounded-lg border border-white/10 bg-white/5 px-2 py-1">
@@ -672,18 +715,33 @@ export default function AnalyzePage() {
 
               <label className="flex flex-col gap-1.5 text-xs font-semibold">
                 Audience segment
-                <select
-                  className="h-10 rounded-lg border border-white/10 bg-black/30 px-3 text-sm text-white"
-                  value={audienceSegment}
-                  onChange={(e) =>
-                    setAudienceSegment(e.target.value as AudienceSegment)
-                  }
-                >
-                  <option value="budget_sensitive">budget_sensitive</option>
-                  <option value="social_proof_driven">social_proof_driven</option>
-                  <option value="viral_share_oriented">viral_share_oriented</option>
-                  <option value="premium_brand_oriented">premium_brand_oriented</option>
-                </select>
+                <div className="relative">
+                  <select
+                    className="h-10 w-full appearance-none rounded-lg border border-white/10 bg-black/30 px-3 pr-9 text-sm text-white outline-none ring-0 transition focus:border-white/20 focus:bg-black/40"
+                    value={audienceSegment}
+                    onChange={(e) => setAudienceSegment(e.target.value as AudienceSegment)}
+                  >
+                    {AUDIENCE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute inset-y-0 right-2 grid place-items-center text-zinc-400">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <path
+                        d="M7 10l5 5 5-5"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <span className="text-[11px] font-normal text-zinc-300">
+                  {AUDIENCE_OPTIONS.find((o) => o.value === audienceSegment)?.description}
+                </span>
               </label>
 
               <div className="flex flex-col gap-1.5 text-xs font-semibold sm:col-span-2 lg:col-span-1">
@@ -725,48 +783,74 @@ export default function AnalyzePage() {
             <h2 className="text-base font-semibold text-white">Results</h2>
             {!result ? (
               <div className="mt-3 rounded-xl border border-dashed border-white/10 p-4 text-sm text-zinc-300">
-                Upload creatives to see a brain engagement breakdown.
+                Upload creatives to see what stands out in each variant.
               </div>
             ) : (
               <div className="mt-3 flex flex-col gap-3">
-                {/* PRD-style summary */}
+                {/* What this means */}
                 <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="text-xs font-semibold text-zinc-300">VERDICT</div>
-                    <div className="flex items-center gap-2 text-[11px]">
-                      <span
-                        className={[
-                          "rounded-full border px-2 py-0.5 font-semibold",
-                          result.narrative_source === "llm"
-                            ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
-                            : "border-white/15 bg-white/5 text-zinc-200",
-                        ].join(" ")}
-                      >
-                        Narrative: {result.narrative_source === "llm" ? "AI" : "Standard"}
-                      </span>
-                      {result.narrative_source === "llm" && result.narrative_model ? (
-                        <span className="rounded-full border border-white/10 bg-black/20 px-2 py-0.5 font-mono text-zinc-300">
-                          {result.narrative_model}
-                        </span>
-                      ) : null}
-                    </div>
-                  </div>
-                  <div className="mt-2 text-sm text-white">
-                    {mode === "single"
-                      ? "Here’s what the brain notices most in your ad — and what to fix."
-                      : `Version ${abFromVariantId(result.overall_winner)} is stronger overall for ${result.objective}.`}
-                  </div>
-                  <div className="mt-2 text-xs text-zinc-300">
-                    Objective winner:{" "}
-                    <span className="font-semibold text-white">
-                      {abFromVariantId(result.objective_winner)}
-                    </span>{" "}
-                    • Overall winner:{" "}
-                    <span className="font-semibold text-white">
-                      {abFromVariantId(result.overall_winner)}
-                    </span>
+                  <div className="text-sm font-semibold text-white">💡 WHAT THIS MEANS</div>
+                  <p className="mt-2 text-sm text-zinc-200 leading-6">
+                    {shortExplanation(result.explanation)}
+                  </p>
+                  <details className="mt-3 rounded-xl border border-white/10 bg-black/20 p-3">
+                    <summary className="cursor-pointer text-[11px] font-semibold text-zinc-200">
+                      Show details
+                    </summary>
+                    <p className="mt-2 text-sm text-zinc-200 leading-6 whitespace-pre-wrap">
+                      {result.explanation}
+                    </p>
+                  </details>
+                  <div className="mt-4">
+                    <div className="text-xs font-semibold text-zinc-300">3 THINGS TO FIX</div>
+                    <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-zinc-200">
+                      {result.recommendations.slice(0, 3).map((r, idx) => (
+                        <li key={idx}>{r}</li>
+                      ))}
+                    </ol>
                   </div>
                 </div>
+
+                {mode !== "single" ? (
+                  <>
+                    {/* PRD-style summary */}
+                    <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div className="text-xs font-semibold text-zinc-300">VERDICT</div>
+                        <div className="flex items-center gap-2 text-[11px]">
+                          <span
+                            className={[
+                              "rounded-full border px-2 py-0.5 font-semibold",
+                              result.narrative_source === "llm"
+                                ? "border-emerald-400/40 bg-emerald-400/10 text-emerald-200"
+                                : "border-white/15 bg-white/5 text-zinc-200",
+                            ].join(" ")}
+                          >
+                            Narrative: {result.narrative_source === "llm" ? "AI" : "Standard"}
+                          </span>
+                          {result.narrative_source === "llm" && result.narrative_model ? (
+                            <span className="rounded-full border border-white/10 bg-black/20 px-2 py-0.5 font-mono text-zinc-300">
+                              {result.narrative_model}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className="mt-2 text-sm text-white">
+                        {`Version ${abFromVariantId(result.overall_winner)} is stronger overall for ${result.objective}.`}
+                      </div>
+                      <div className="mt-2 text-xs text-zinc-300">
+                        Objective winner:{" "}
+                        <span className="font-semibold text-white">
+                          {abFromVariantId(result.objective_winner)}
+                        </span>{" "}
+                        • Overall winner:{" "}
+                        <span className="font-semibold text-white">
+                          {abFromVariantId(result.overall_winner)}
+                        </span>
+                      </div>
+                    </div>
+                  </>
+                ) : null}
 
                 {/* What we found: element list from segments */}
                 <div className="rounded-3xl border border-white/10 bg-black/30 p-4">
@@ -776,7 +860,9 @@ export default function AnalyzePage() {
                         What we found
                       </div>
                       <div className="mt-1 text-xs text-zinc-300">
-                        Each stat below is tied to the creative above (A/B).
+                        {mode === "single"
+                          ? "Each stat below is tied to the creative you uploaded."
+                          : "Each stat below is tied to the creative above (A/B)."}
                       </div>
                     </div>
                     <div className="text-[11px] text-zinc-400">
@@ -797,8 +883,8 @@ export default function AnalyzePage() {
                       const strongest = [...v.segments].sort((a, b) => b.visual_weight_pct - a.visual_weight_pct)[0];
                       const weakest = [...v.segments].sort((a, b) => a.visual_weight_pct - b.visual_weight_pct)[0];
                       const ab = mode === "compare" ? abFromVariantId(v.variant_id) : "Your ad";
-                      const isOverallWinner = v.variant_id === result.overall_winner;
-                      const isObjectiveWinner = v.variant_id === result.objective_winner;
+                      const isOverallWinner = mode !== "single" && v.variant_id === result.overall_winner;
+                      const isObjectiveWinner = mode !== "single" && v.variant_id === result.objective_winner;
 
                       return (
                         <div key={v.variant_id} className="rounded-3xl border border-white/10 bg-black/30 p-4">
@@ -818,10 +904,10 @@ export default function AnalyzePage() {
                                 Segments: {v.segments_source === "sam3" ? "SAM3" : "Mock"}
                               </span>
                               <div className="min-w-0">
-                                <div className="truncate text-sm font-semibold text-white">
+                                <div className="text-sm font-semibold text-white">
                                   {mode === "compare" ? (ab === "A" ? "Control" : "Variant") : "Your creative"}
                                 </div>
-                                <div className="truncate text-[11px] text-zinc-300">
+                                <div className="break-words text-[11px] text-zinc-300">
                                   {v.filename}
                                 </div>
                               </div>
@@ -862,20 +948,71 @@ export default function AnalyzePage() {
                             </div>
                           </div>
 
+                          {v.pillar_scores ? (
+                            <div className="mt-3 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
+                              {PILLAR_ORDER.filter((p) => p in v.pillar_scores!).map((pillar) => {
+                                const score = v.pillar_scores?.[pillar] ?? 0;
+                                const bd = (v.pillar_breakdown?.[pillar] as any) || null;
+                                const drivers = bd?.drivers || [];
+                                const drags = bd?.drags || [];
+                                const missing = bd?.missing || [];
+                                return (
+                                  <div
+                                    key={`${v.variant_id}-pillar-${pillar}`}
+                                    className="rounded-2xl border border-white/10 bg-black/20 p-3"
+                                  >
+                                    <div className="flex items-baseline justify-between gap-2">
+                                      <div className="text-[11px] font-semibold text-zinc-200">
+                                        {pillar}
+                                      </div>
+                                      <div className="font-mono text-white">{Number(score).toFixed(1)}/100</div>
+                                    </div>
+                                    {bd ? (
+                                      <div className="mt-2 space-y-1 text-[11px] text-zinc-400">
+                                        {drivers.length ? (
+                                          <div>
+                                            <span className="text-zinc-300">Helped:</span>{" "}
+                                            {formatFactorList(drivers, 2)}
+                                          </div>
+                                        ) : null}
+                                        {drags.length ? (
+                                          <div>
+                                            <span className="text-zinc-300">Hurt:</span>{" "}
+                                            {formatFactorList(drags, 2)}
+                                          </div>
+                                        ) : null}
+                                        {missing.length ? (
+                                          <div>
+                                            <span className="text-zinc-300">Missing:</span>{" "}
+                                            {missing
+                                              .slice(0, 2)
+                                              .map((f: any) => factorName(f))
+                                              .join(", ")}
+                                          </div>
+                                        ) : null}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ) : null}
+
                           <div className="mt-3 text-xs text-zinc-300">
                             Strongest:{" "}
                             <span className="font-semibold text-white">
-                              {prettyLabel(strongest?.label ?? "—")}
+                              {strongest ? segmentTitle(strongest) : "—"}
                             </span>{" "}
                             • Weakest:{" "}
                             <span className="font-semibold text-white">
-                              {prettyLabel(weakest?.label ?? "—")}
+                              {weakest ? segmentTitle(weakest) : "—"}
                             </span>
                           </div>
 
                           <div className="mt-4 space-y-2">
                             {v.segments.map((s, idx) => {
                               const pseudoScore = clamp((s.visual_weight_pct / 100) * 10, 0, 10);
+                              const copyMode = result.copy_mode === "brain" ? "brain" : "neutral";
                               return (
                                 <div
                                   key={`${v.variant_id}-${s.label}-${idx}`}
@@ -883,12 +1020,31 @@ export default function AnalyzePage() {
                                 >
                                   <div className="flex items-center justify-between gap-3">
                                     <div className="text-xs font-semibold text-white">
-                                      {prettyLabel(s.label)}
+                                      {segmentTitle(s)}
                                     </div>
                                     <div className="text-xs text-zinc-300 font-mono">
                                       {pseudoScore.toFixed(1)}/10
                                     </div>
                                   </div>
+                                  {(s.pillar || s.scoring_weight != null) ? (
+                                    <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-zinc-400">
+                                      {s.pillar ? (
+                                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-zinc-300">
+                                          {s.pillar}
+                                        </span>
+                                      ) : null}
+                                      {s.scoring_weight != null ? (
+                                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono">
+                                          w={s.scoring_weight}
+                                        </span>
+                                      ) : null}
+                                      {s.impact_score != null ? (
+                                        <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 font-mono">
+                                          impact={s.impact_score.toFixed(1)}
+                                        </span>
+                                      ) : null}
+                                    </div>
+                                  ) : null}
                                   <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-white/10">
                                     <div
                                       className={`h-2 ${scoreColor(pseudoScore)}`}
@@ -897,7 +1053,7 @@ export default function AnalyzePage() {
                                   </div>
                                   <div className="mt-2 text-[11px] text-zinc-300">
                                     Takes up {s.visual_weight_pct.toFixed(0)}% •{" "}
-                                    {scoreLabel(pseudoScore)}
+                                    {scoreLabel(pseudoScore, copyMode)}
                                   </div>
                                 </div>
                               );
@@ -906,20 +1062,6 @@ export default function AnalyzePage() {
                         </div>
                       );
                     })}
-                  </div>
-                </div>
-
-                {/* What this means */}
-                <div className="rounded-2xl border border-white/10 bg-black/30 p-4">
-                  <div className="text-sm font-semibold text-white">💡 WHAT THIS MEANS</div>
-                  <p className="mt-2 text-sm text-zinc-200 leading-6">{result.explanation}</p>
-                  <div className="mt-4">
-                    <div className="text-xs font-semibold text-zinc-300">3 THINGS TO FIX</div>
-                    <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-zinc-200">
-                      {result.recommendations.slice(0, 3).map((r, idx) => (
-                        <li key={idx}>{r}</li>
-                      ))}
-                    </ol>
                   </div>
                 </div>
 
@@ -941,6 +1083,16 @@ export default function AnalyzePage() {
                             </div>
                           ))}
                         </div>
+                        {v.segments_source === "sam3" && v.roboflow_raw ? (
+                          <details className="mt-4 rounded-xl border border-white/10 bg-black/20 p-3">
+                            <summary className="cursor-pointer text-[11px] font-semibold text-zinc-200">
+                              View Roboflow raw output
+                            </summary>
+                            <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap break-words rounded-lg border border-white/10 bg-black/40 p-3 text-[11px] leading-5 text-zinc-200">
+                              {JSON.stringify(v.roboflow_raw, null, 2)}
+                            </pre>
+                          </details>
+                        ) : null}
                       </div>
                     ))}
                   </div>

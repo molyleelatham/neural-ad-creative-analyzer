@@ -1,0 +1,21 @@
+original_class,display_name,pillar,scoring_weight,roboflow_label,notes
+headline_text,Headline,Attention,17.91%,headline_text,Keep — primary message
+face_eye_contact,Eye Contact,Attention,29.85%,face_eye_contact,Highest weight — scroll stopper
+face_gaze_cta,Gaze → CTA,Attention,22.39%,face_gaze_cta,Guides eye to action
+face_gaze_away,Gaze Away,Attention,-14.93%,face_gaze_away,Negative — leaks attention
+body_pointing,Body Pointing,Attention,14.93%,body_pointing,Gestural CTA reinforcement
+female_presenting,Female Model,Emotion,12.82%,female_presenting,Demographic signal
+male_presenting,Male Model,Emotion,12.82%,male_presenting,Demographic signal
+gender_neutral,Gender Neutral,Emotion,12.82%,gender_neutral,Demographic signal
+face_smiling,Smiling Face,Emotion,25.64%,face_smiling,Positive emotion trigger
+face_serious,Serious Face,Emotion,15.38%,face_serious,Authority/aspiration signal
+face_aspiring,Aspiring Face,Emotion,20.51%,face_aspiring,Lifestyle aspiration
+brand_logo,Brand Logo,Trust,44.44%,brand_logo,Keep — brand recall
+social_proof,Social Proof,Trust,55.56%,social_proof,Keep — trust signal
+product_shot,Product Shot,Clarity,31.25%,product_shot,Keep — hero product
+background,Background,Clarity,-15.63%,background,Negative — passive element
+body_copy,Body Copy,Clarity,25.00%,body_copy,Keep — supporting message
+body_using_product,Using Product,Clarity,28.13%,body_using_product,Demonstrates product in use
+price_offer,Price / Offer,Urgency,30.77%,price_offer,Keep — financial trigger
+urgency_element,Urgency Element,Urgency,30.77%,urgency_element,Keep — scarcity/timer
+cta_button,CTA Button,Urgency,38.46%,cta_button,Keep — core conversion element

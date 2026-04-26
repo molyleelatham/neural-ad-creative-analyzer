@@ -82,7 +82,7 @@ async def health() -> HealthResponse:
 async def compare(
     objective: Annotated[CampaignObjective, Form()],
     audience_segment: Annotated[AudienceSegment, Form()],
-    files: Annotated[list[UploadFile], File(min_length=2, max_length=5)],
+    files: Annotated[list[UploadFile], File(min_length=1, max_length=5)],
 ) -> ComparisonResult:
     variant_inputs: list[tuple[str, str, str | None]] = []
     for index, upload in enumerate(files):

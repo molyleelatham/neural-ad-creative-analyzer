@@ -1,0 +1,21 @@
+original_class,display_name,pillar,scoring_weight,roboflow_label,notes
+cta_button,CTA Button,Urgency,15,cta_button,Keep — core conversion element
+headline_text,Headline,Attention,12,headline_text,Keep — primary message
+brand_logo,Brand Logo,Trust,8,brand_logo,Keep — brand recall
+product_shot,Product Shot,Clarity,10,product_shot,Keep — hero product
+price_offer,Price / Offer,Urgency,12,price_offer,Keep — financial trigger
+social_proof,Social Proof,Trust,10,social_proof,Keep — trust signal
+urgency_element,Urgency Element,Urgency,12,urgency_element,Keep — scarcity/timer
+background,Background,Clarity,-5,background,Negative — passive element
+body_copy,Body Copy,Clarity,8,body_copy,Keep — supporting message
+face_eye_contact,Eye Contact,Attention,20,face_eye_contact,Highest weight — scroll stopper
+face_gaze_cta,Gaze → CTA,Attention,15,face_gaze_cta,Guides eye to action
+face_gaze_away,Gaze Away,Attention,-10,face_gaze_away,Negative — leaks attention
+female_presenting,Female Model,Emotion,5,female_presenting,Demographic signal
+male_presenting,Male Model,Emotion,5,male_presenting,Demographic signal
+gender_neutral,Gender Neutral,Emotion,5,gender_neutral,Demographic signal
+face_smiling,Smiling Face,Emotion,10,face_smiling,Positive emotion trigger
+face_serious,Serious Face,Emotion,6,face_serious,Authority/aspiration signal
+face_aspiring,Aspiring Face,Emotion,8,face_aspiring,Lifestyle aspiration
+body_pointing,Body Pointing,Attention,10,body_pointing,Gestural CTA reinforcement
+body_using_product,Using Product,Clarity,9,body_using_product,Demonstrates product in use
