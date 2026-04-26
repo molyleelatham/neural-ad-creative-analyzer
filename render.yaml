@@ -5,12 +5,16 @@ services:
     runtime: python
     region: oregon
     plan: starter
-    buildCommand: pip install -r backend/requirements.txt
+    buildCommand: pip install -r backend/requirements.txt && python backend/migrate.py migrate
     startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
         value: "3.12.0"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: arcanalytics-db
+          property: connectionString
       - key: ROBOFLOW_API_KEY
         sync: false
       - key: ROBOFLOW_WORKSPACE
@@ -27,6 +31,8 @@ services:
         sync: false
       - key: LOGFIRE_TOKEN
         sync: false
+      - key: ENVIRONMENT
+        value: production
       - key: CORS_ORIGINS
         sync: false   # set to your Render frontend URL after first deploy
 
@@ -48,3 +54,12 @@ services:
           name: arcanalytics-backend
           type: web
           property: host
+
+# ── Database: PostgreSQL ─────────────────────────────────────────────────────
+databases:
+  - name: arcanalytics-db
+    databaseName: arcanalytics
+    user: arcanalytics_user
+    region: oregon
+    plan: starter
+    postgresMajorVersion: 16
