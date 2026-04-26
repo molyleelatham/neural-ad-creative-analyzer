@@ -3,27 +3,56 @@
 import React from "react";
 
 const ROI_DATA = [
-  { id: 'attention', label: 'Attention',     cx: 0.50, cy: 0.32, r: 0.06,  phase: 0.0, base: 0.85 },
-  { id: 'visual',    label: 'Visual cortex', cx: 0.50, cy: 0.78, r: 0.08,  phase: 0.6, base: 0.92 },
-  { id: 'emotion',   label: 'Emotion',       cx: 0.32, cy: 0.55, r: 0.05,  phase: 1.2, base: 0.74 },
-  { id: 'language',  label: 'Language',      cx: 0.30, cy: 0.42, r: 0.045, phase: 1.8, base: 0.61 },
-  { id: 'memory',    label: 'Memory',        cx: 0.68, cy: 0.55, r: 0.05,  phase: 2.4, base: 0.68 },
-  { id: 'dmn',       label: 'Default mode',  cx: 0.62, cy: 0.40, r: 0.04,  phase: 3.0, base: 0.45 },
+  // Limbic System (red/orange tones)
+  { id: 'amygdala', label: 'Amygdala',      cx: 0.42, cy: 0.55, r: 0.04,  phase: 0.0, base: 0.78, system: 'Limbic' },
+  { id: 'hippocampus', label: 'Hippocampus', cx: 0.38, cy: 0.52, r: 0.045, phase: 0.3, base: 0.72, system: 'Limbic' },
+  { id: 'acc', label: 'Anterior Cingulate', cx: 0.50, cy: 0.35, r: 0.05,  phase: 0.6, base: 0.68, system: 'Limbic' },
+  { id: 'insula', label: 'Insula',          cx: 0.58, cy: 0.48, r: 0.04,  phase: 0.9, base: 0.65, system: 'Limbic' },
+  
+  // Executive Functions (blue tones)
+  { id: 'dlpfc', label: 'DLPFC',          cx: 0.35, cy: 0.28, r: 0.055, phase: 1.2, base: 0.81, system: 'Executive' },
+  { id: 'vmpfc', label: 'Ventromedial PFC', cx: 0.52, cy: 0.38, r: 0.048, phase: 1.5, base: 0.75, system: 'Executive' },
+  { id: 'parietal', label: 'Parietal',     cx: 0.65, cy: 0.42, r: 0.06,  phase: 1.8, base: 0.83, system: 'Executive' },
+  
+  // Reward System (yellow/orange tones)
+  { id: 'striatum', label: 'Striatum',     cx: 0.48, cy: 0.52, r: 0.05,  phase: 2.1, base: 0.70, system: 'Reward' },
+  { id: 'nacc', label: 'NAcc',            cx: 0.45, cy: 0.55, r: 0.04,  phase: 2.4, base: 0.67, system: 'Reward' },
+  
+  // Sensory Processing (purple tones)
+  { id: 'visual', label: 'Visual Cortex', cx: 0.50, cy: 0.75, r: 0.08,  phase: 2.7, base: 0.88, system: 'Sensory' },
+  { id: 'temporal', label: 'Temporal Lobe', cx: 0.72, cy: 0.58, r: 0.065, phase: 3.0, base: 0.76, system: 'Sensory' },
+  { id: 'language', label: 'Language',    cx: 0.28, cy: 0.45, r: 0.045, phase: 3.3, base: 0.62, system: 'Sensory' },
 ];
 
 const ACCENT      = 'oklch(0.55 0.08 180)';
 const ACCENT_SOFT = 'oklch(0.92 0.03 180)';
+
+// Data interface for brain activation
+interface BrainData {
+  roi_means?: {
+    emotion: number;
+    language: number;
+    attention: number;
+    visual: number;
+    dmn: number;
+  };
+  peak_score?: number;
+  peak_second?: number;
+  sustained_score?: number;
+}
 
 function BrainViz({
   size = 560,
   showLabels = true,
   mono = false,
   intensity = 1,
+  brainData,
 }: {
   size?: number;
   showLabels?: boolean;
   mono?: boolean;
   intensity?: number;
+  brainData?: BrainData | null;
 }) {
   const [t, setT] = React.useState(0);
   React.useEffect(() => {
@@ -78,16 +107,58 @@ function BrainViz({
       <g clipPath="url(#brainClip)">
         {ROI_DATA.map((roi) => {
           const pulse      = 0.5 + 0.5 * Math.sin(t * 1.4 + roi.phase);
-          const activation = roi.base * (0.55 + 0.45 * pulse) * intensity;
+          
+          // Use real brain data if available, otherwise fall back to mock data
+          let realActivation = roi.base;
+          if (brainData?.roi_means) {
+            // Map the new ROI structure to available data
+            switch (roi.id) {
+              case 'amygdala':
+              case 'hippocampus':
+                realActivation = Math.min(1, brainData.roi_means.emotion / 100);
+                break;
+              case 'acc':
+              case 'insula':
+                realActivation = Math.min(1, (brainData.roi_means.emotion + brainData.roi_means.attention) / 200);
+                break;
+              case 'dlpfc':
+              case 'vmpfc':
+              case 'parietal':
+                realActivation = Math.min(1, brainData.roi_means.attention / 100);
+                break;
+              case 'striatum':
+              case 'nacc':
+                realActivation = Math.min(1, (brainData.sustained_score || roi.base * 100) / 100);
+                break;
+              case 'visual':
+                realActivation = Math.min(1, brainData.roi_means.visual / 100);
+                break;
+              case 'temporal':
+              case 'language':
+                realActivation = Math.min(1, brainData.roi_means.language / 100);
+                break;
+              default:
+                realActivation = roi.base;
+            }
+          }
+          
+          const activation = realActivation * (0.55 + 0.45 * pulse) * intensity;
           const cx         = roi.cx * W;
           const cy         = roi.cy * H;
           const rGlow      = roi.r * W * (1.4 + 0.5 * pulse);
+          
+          // Color by brain system
+          const systemColor = roi.system === 'Limbic' ? '#ef4444' :
+                             roi.system === 'Executive' ? '#3b82f6' :
+                             roi.system === 'Reward' ? '#f59e0b' :
+                             roi.system === 'Sensory' ? '#8b5cf6' : accent;
+          
           return (
             <g key={roi.id}>
               <circle cx={cx} cy={cy} r={rGlow} fill="url(#roiGlow)" opacity={activation} />
-              <circle cx={cx} cy={cy} r={roi.r * W * 0.45} fill={accent} opacity={0.85} />
+              <circle cx={cx} cy={cy} r={roi.r * W * 0.45} fill={systemColor} opacity={0.85} />
               <circle cx={cx} cy={cy} r={roi.r * W * 0.45 + 1.5 * pulse}
-                fill="none" stroke={accent} strokeWidth="1" opacity={0.7 - 0.5 * pulse} />
+                fill="none" stroke={systemColor} strokeWidth="1" opacity={0.7 - 0.5 * pulse} />
             </g>
           );
         })}
@@ -105,15 +176,45 @@ function BrainViz({
         ))}
       </g>
 
-      {/* Labels */}
-      {showLabels && ROI_DATA.map((roi) => {
+      {/* Brain Systems Legend */}
+      {showLabels && (
+        <g transform={`translate(${W - 120}, 20)`}>
+          <rect x="0" y="0" width="110" height="85" fill="white" fillOpacity="0.95" stroke="#1a1a1a" strokeOpacity="0.2" rx="4" />
+          <text x="55" y="15" fontSize="10" fontWeight="600" textAnchor="middle" fill="#1a1a1a">Brain Systems</text>
+          
+          <circle cx="10" cy="25" r="3" fill="#ef4444" />
+          <text x="18" y="28" fontSize="8" fill="#1a1a1a">Limbic</text>
+          
+          <circle cx="10" cy="37" r="3" fill="#3b82f6" />
+          <text x="18" y="40" fontSize="8" fill="#1a1a1a">Executive</text>
+          
+          <circle cx="10" cy="49" r="3" fill="#f59e0b" />
+          <text x="18" y="52" fontSize="8" fill="#1a1a1a">Reward</text>
+          
+          <circle cx="10" cy="61" r="3" fill="#8b5cf6" />
+          <text x="18" y="64" fontSize="8" fill="#1a1a1a">Sensory</text>
+          
+          <text x="55" y="78" fontSize="7" textAnchor="middle" fill="#1a1a1a" fillOpacity="0.6">
+            Neuromarketing Focus
+          </text>
+        </g>
+      )}
+
+      {/* Key Region Labels */}
+      {showLabels && ROI_DATA.filter(roi => ['amygdala', 'vmpfc', 'striatum', 'visual'].includes(roi.id)).map((roi) => {
         const pulse      = 0.5 + 0.5 * Math.sin(t * 1.4 + roi.phase);
         const activation = roi.base * (0.55 + 0.45 * pulse);
         const cx         = roi.cx * W;
         const cy         = roi.cy * H;
         const onLeft     = roi.cx < 0.5;
-        const labelX     = onLeft ? 18 : W - 18;
+        const labelX     = onLeft ? 18 : W - 130; // Adjust for legend
         const anchor     = onLeft ? 'start' : 'end';
+        
+        const systemColor = roi.system === 'Limbic' ? '#ef4444' :
+                           roi.system === 'Executive' ? '#3b82f6' :
+                           roi.system === 'Reward' ? '#f59e0b' :
+                           roi.system === 'Sensory' ? '#8b5cf6' : accent;
+        
         return (
           <g key={`lbl-${roi.id}`}>
             <line
@@ -121,7 +222,7 @@ function BrainViz({
               x2={labelX + (onLeft ? -4 : 4)} y2={cy}
               stroke="#1a1a1a" strokeOpacity="0.35" strokeWidth="0.5"
             />
-            <circle cx={labelX + (onLeft ? -4 : 4)} cy={cy} r="1.5" fill="#1a1a1a" />
+            <circle cx={labelX + (onLeft ? -4 : 4)} cy={cy} r="1.5" fill={systemColor} />
             <text
               x={labelX} y={cy - 4}
               fontFamily="var(--v3-font-mono), 'JetBrains Mono', monospace"
@@ -133,7 +234,7 @@ function BrainViz({
             <text
               x={labelX} y={cy + 8}
               fontFamily="var(--v3-font-mono), 'JetBrains Mono', monospace"
-              fontSize="10" fill={accent} textAnchor={anchor} fontWeight="600"
+              fontSize="10" fill={systemColor} textAnchor={anchor} fontWeight="600"
             >
               {(activation * 100).toFixed(1)}
             </text>
@@ -170,12 +271,25 @@ function BrainOutline({
   return <path d={d} stroke={stroke} strokeWidth={strokeWidth} fill={fill} />;
 }
 
+// Timeline data interface
+interface TimelineData {
+  second: number;
+  posterior_P_convert: number;
+  roi_attention: number;
+  roi_emotion: number;
+  roi_language: number;
+  roi_visual: number;
+  roi_dmn: number;
+}
+
 function ROITimeline({
   height = 80,
   color = ACCENT,
+  timelineData,
 }: {
   height?: number;
   color?: string;
+  timelineData?: TimelineData[] | null;
 }) {
   const [t, setT] = React.useState(0);
   React.useEffect(() => {
@@ -187,15 +301,31 @@ function ROITimeline({
   }, []);
 
   const W = 600, H = height, N = 60;
-  const points = Array.from({ length: N }, (_, i) => {
-    const x     = (i / (N - 1)) * W;
-    const phase = i * 0.18;
-    const y     = H * 0.5
-      + Math.sin(t * 0.8  + phase)       * H * 0.18
-      + Math.sin(t * 1.6  + phase * 1.7) * H * 0.12
-      + Math.cos(t * 0.4  + phase * 0.6) * H * 0.08;
-    return [x, H - y] as [number, number];
-  });
+  let points: [number, number][];
+  
+  if (timelineData && timelineData.length > 0) {
+    // Use real timeline data
+    const maxSecond = Math.max(...timelineData.map(d => d.second));
+    const maxValue = Math.max(...timelineData.map(d => d.posterior_P_convert));
+    
+    points = timelineData.map((data, i) => {
+      const x = (data.second / maxSecond) * W;
+      const y = (data.posterior_P_convert / maxValue) * H * 0.8 + H * 0.1; // Scale to 80% of height with 10% padding
+      return [x, H - y] as [number, number];
+    });
+  } else {
+    // Fall back to mock animated data
+    points = Array.from({ length: N }, (_, i) => {
+      const x     = (i / (N - 1)) * W;
+      const phase = i * 0.18;
+      const y     = H * 0.5
+        + Math.sin(t * 0.8  + phase)       * H * 0.18
+        + Math.sin(t * 1.6  + phase * 1.7) * H * 0.12
+        + Math.cos(t * 0.4  + phase * 0.6) * H * 0.08;
+      return [x, H - y] as [number, number];
+    });
+  }
+  
   const path = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0]} ${p[1]}`).join(' ');
   const area = `${path} L ${W} ${H} L 0 ${H} Z`;
 

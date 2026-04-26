@@ -157,11 +157,11 @@ async def _brain_compare(
 
 async def _build_narrative(
     visual_analyses: list[VariantAnalysis],
+    brain_singles: list[AnalyzeResponse | None],
     objective: CampaignObjective,
     audience: AudienceSegment,
     overall_winner: str,
     objective_winner: str,
-    brain_data: dict[str, Any] | None,
 ) -> tuple[str, list[str], str, str | None]:
     """
     Returns (explanation, recommendations, narrative_source, narrative_model).
@@ -195,11 +195,52 @@ async def _build_narrative(
             *_build_recommendations(visual_analyses, objective),
         ]
 
-    # Try LLM narrative
+    # Enhanced payload with brain data for LLM evaluation
+    enhanced_variants_payload = []
+    for i, visual_analysis in enumerate(visual_analyses):
+        variant_data = visual_analysis.model_dump(mode="json")
+        
+        # Add brain data if available
+        if i < len(brain_singles) and brain_singles[i] is not None:
+            brain_data = brain_singles[i]
+            variant_data["brain_model_results"] = {
+                "ad_scores": {
+                    "composite_score": brain_data.ad.composite_score,
+                    "peak_score": brain_data.ad.peak_score,
+                    "peak_second": brain_data.ad.peak_second,
+                    "sustained_score": brain_data.ad.sustained_score,
+                    "dominant_emotion": brain_data.ad.dominant_emotion_overall
+                },
+                "roi_activations": brain_data.ad.roi_means.model_dump(),
+                "neuromarketing_pillars": [
+                    {
+                        "key": pillar.key,
+                        "label": pillar.label,
+                        "score": pillar.score,
+                        "description": pillar.description,
+                        "brain_regions": pillar.brain_regions
+                    } for pillar in brain_data.pillars
+                ] if brain_data.pillars else [],
+                "brain_regions": [
+                    {
+                        "roi": region.roi,
+                        "label": region.label,
+                        "mean_activation": region.mean_activation,
+                        "peak_activation": region.peak_activation,
+                        "peak_second": region.peak_second
+                    } for region in brain_data.brain.regions
+                ] if brain_data.brain else []
+            }
+        else:
+            variant_data["brain_model_results"] = None
+            
+        enhanced_variants_payload.append(variant_data)
+
+    # Try LLM narrative with enhanced data
     narrative = await enrich_comparison_narrative(
         objective_value=objective.value,
         audience_value=audience.value,
-        variants_payload=[a.model_dump(mode="json") for a in visual_analyses],
+        variants_payload=enhanced_variants_payload,
         overall_winner=overall_winner,
         objective_winner=objective_winner,
     )
@@ -210,7 +251,9 @@ async def _build_narrative(
             "1", "true", "yes", "on",
         }:
             model_name = "test"
-        return narrative.explanation, narrative.recommendations, "llm", model_name
+        
+        # Use the unified analysis directly from LLM
+        return narrative.unified_analysis, narrative.recommendations, "llm", model_name
 
     return template_explanation, template_recs, "template", None
 
@@ -302,11 +345,11 @@ async def run_full_analysis(
     explanation, recommendations, narrative_source, narrative_model = (
         await _build_narrative(
             visual_analyses=visual_analyses,
+            brain_singles=brain_singles,
             objective=objective,
             audience=audience_segment,
             overall_winner=overall_winner_analysis.variant_id,
             objective_winner=objective_winner_analysis.variant_id,
-            brain_data=None,  # reserved for future cross-system enrichment
         )
     )
 
@@ -322,10 +365,16 @@ async def run_full_analysis(
             )
         )
 
+    # Include baseline comparison for single mode
+    baseline_comparison = None
+    if mode == "single" and brain_singles[0] is not None:
+        baseline_comparison = brain_singles[0].vs_baseline
+
     return FullAnalysisResult(
         mode=mode,
         variants=full_variants,
         brain_compare=brain_compare_result,
+        baseline_comparison=baseline_comparison,
         objective=objective,
         audience_segment=audience_segment,
         overall_winner=overall_winner_analysis.variant_id,

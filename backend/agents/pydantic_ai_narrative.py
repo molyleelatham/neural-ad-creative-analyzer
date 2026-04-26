@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class CompareNarrative(BaseModel):
     """LLM output validated by Pydantic; merged into ComparisonResult when generation succeeds."""
 
-    explanation: str = Field(..., min_length=20)
+    unified_analysis: str = Field(..., min_length=50, description="Unified analysis combining CV and brain model insights into one cohesive summary")
     recommendations: list[str] = Field(..., min_length=2, max_length=8)
 
 
@@ -92,16 +92,24 @@ async def enrich_comparison_narrative(
         model_name,
         output_type=CompareNarrative,
         instructions=(
-            "You are an ad analytics strategist for Arcanalytics. "
-            "You receive JSON with per-variant scores, mock neural features, and segment labels. "
-            "If variants.length == 1, write a single-ad narrative (do NOT mention winners or comparisons). "
-            "If variants.length >= 2, explain which variant wins for the stated objective and overall, referencing the numbers given. "
-            "Do not invent new numeric scores. "
-            "Recommendations must be short, actionable bullets for a marketing team. "
-            "Never mention variants that are not present in the payload."
+            "You are a neuro-marketing analyst for Arcanalytics. You receive detailed analysis data from both computer vision models and brain models. "
+            "Your task is to provide a UNIFIED analysis that synthesizes insights from BOTH the CV and brain data into ONE cohesive summary.\n\n"
+            "CV Data Includes: Visual segmentation, element weights, pillar scores, brand detection, CTA visibility, visual hierarchy.\n"
+            "Brain Data Includes: Neural activation patterns, ROI engagement, limbic system response, neuromarketing pillars, emotional/cognitive processing.\n\n"
+            "IMPORTANT: Do NOT separate these into different sections. Create ONE unified narrative that weaves together insights from both models. "
+            "For example: 'The CV model shows strong brand prominence (18% visual weight) which correlates with the brain model's high hippocampus activation (0.082), indicating effective brand memory encoding.'\n\n"
+            "Your unified analysis should:\n"
+            "- Connect specific CV findings with corresponding brain responses\n"
+            "- Explain how visual elements drive neural activation patterns\n"
+            "- Identify which combinations of visual and neural factors drive performance\n"
+            "- For comparisons: Explain which creative wins based on the combined CV+brain evidence\n\n"
+            "CRITICAL: Always reference specific data points from BOTH models. Use actual scores, percentages, and activation values. "
+            "Show how the visual and neural data tell a complete story together.\n\n"
+            "Recommendations should be actionable improvements based on your unified analysis of both model outputs."
         ),
     )
 
+    # Enhanced payload with detailed CV and brain model evaluation data
     payload = {
         "mode": "single" if len(variants_payload) == 1 else "compare",
         "objective": objective_value,
@@ -109,6 +117,27 @@ async def enrich_comparison_narrative(
         "overall_winner": overall_winner,
         "objective_winner": objective_winner,
         "variants": variants_payload,
+        "evaluation_context": {
+            "cv_model_focus": [
+                "visual_segmentation_accuracy",
+                "element_weight_distribution", 
+                "pillar_score_effectiveness",
+                "visual_hierarchy_analysis",
+                "brand_element_detection"
+            ],
+            "brain_model_focus": [
+                "limbic_system_activation",
+                "neural_engagement_patterns",
+                "roi_activation_strength",
+                "neuromarketing_pillar_performance",
+                "emotional_cognitive_balance"
+            ],
+            "evaluation_criteria": {
+                "cv_effectiveness": "How well visual elements support the campaign objective",
+                "brain_effectiveness": "How neural patterns indicate persuasive impact",
+                "cross_model_consistency": "Alignment between visual and neural measurements"
+            }
+        }
     }
 
     try:

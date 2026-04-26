@@ -273,7 +273,7 @@ export default function DashboardPage() {
                 const trend = score > 75 ? '+12' : score > 60 ? '+3' : '-5';
                 const seed = analysisIndex * 2 + variantIndex;
                 
-                return (
+                return [
                   <div key={`${analysis.id}-${variant.id}`} style={{
                     display: 'grid', gridTemplateColumns: '60px 2fr 1fr 100px 80px 80px',
                     padding: '16px 24px', alignItems: 'center',
@@ -320,10 +320,10 @@ export default function DashboardPage() {
                     <span style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 22, textAlign: 'right', color: 'var(--v3-ink)' }}>
                         {score.toFixed(1)}
                       </span>
-                    </div>
-                  );
+                  </div>
+                ];
               })
-            )}
+            ))}
         </div>
       </div>
     </div>

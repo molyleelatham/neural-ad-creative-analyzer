@@ -447,9 +447,7 @@ def _build_recommendations(
         elif w_cta < 6.0:
             recs.append(f"{pfx}CTA is easy to miss ({w_cta:.0f}% weight). Increase size/contrast or move closer to the focal area.")
 
-        # Clarity guidance from headline dominance
-        if w_headline > 25.0:
-            recs.append(f"{pfx}Headline dominates ({w_headline:.0f}%). Reduce text density or tighten the message to improve clarity.")
+        # Clarity guidance from headline dominance removed
 
         # Brand guidance
         if objective in {CampaignObjective.purchase, CampaignObjective.clarity} and w_logo < 3.0 and w_logo > 0.0:
@@ -459,9 +457,7 @@ def _build_recommendations(
         if objective == CampaignObjective.purchase and w_product < 12.0 and w_product > 0.0:
             recs.append(f"{pfx}Product presence is low ({w_product:.0f}%). Make the product more central or increase its visual share.")
 
-        # Background waste
-        if w_bg > 45.0:
-            recs.append(f"{pfx}Background is taking a lot of space ({w_bg:.0f}%). Use that space to support product/CTA or simplify the background.")
+        # Background waste removed
 
         # If nothing triggered, provide a simple, data-based nudge.
         if len(recs) == before:

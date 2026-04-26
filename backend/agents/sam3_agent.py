@@ -163,8 +163,8 @@ def _load_class_remap() -> dict[str, dict[str, Any]]:
     if raw_path:
         path = Path(raw_path)
     else:
-        # Default to weightings.csv (pillars + percent weights)
-        path = Path(__file__).resolve().parents[1] / "weightings.csv"
+        # Default to class_remap.csv in backend directory
+        path = Path(__file__).resolve().parent / "class_remap.csv"
 
     if _REMAP_CACHE is not None and _REMAP_CACHE[0] == path:
         return _REMAP_CACHE[1]

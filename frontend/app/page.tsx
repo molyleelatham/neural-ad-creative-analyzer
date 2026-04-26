@@ -225,7 +225,7 @@ export default function HomePage() {
           </div>
           <span style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 18, letterSpacing: '-0.02em' }}>Arcanalytics</span>
         </div>
-        <span style={{ fontSize: 12, color: 'var(--v3-ink-3)' }}>© 2026 Arcanalytics · SAM3 · TribeV2 · Modal</span>
+        <span style={{ fontSize: 12, color: 'var(--v3-ink-3)' }}>© 2026 Arcanalytics · Custom ISM · TribeV2 · Modal</span>
       </footer>
     </div>
   );

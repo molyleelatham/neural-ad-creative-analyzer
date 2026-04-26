@@ -177,6 +177,9 @@ class FullAnalysisResult(BaseModel):
     # Present only in compare mode
     brain_compare: CompareResponse | None = None
 
+    # Present only in single mode - baseline comparison for the single ad
+    baseline_comparison: BaselineComparison | None = None
+
     # SAM3 comparison metadata (compare mode)
     objective: CampaignObjective | None = None
     audience_segment: AudienceSegment | None = None
