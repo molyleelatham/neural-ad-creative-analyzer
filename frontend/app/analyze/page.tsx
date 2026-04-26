@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { V3Nav } from '@/components/V3Nav';
 import { BrainViz } from '@/components/BrainViz';
 
@@ -308,24 +308,192 @@ export default function AnalyzePage() {
   const [loading, setLoading]       = useState(false);
   const [result, setResult]         = useState<AnalysisResult | null>(null);
   const [error, setError]           = useState<string | null>(null);
+  const [analysisStatus, setAnalysisStatus] = useState<{
+    stage: 'idle' | 'uploading' | 'sam3' | 'tribev2' | 'narrative' | 'complete' | 'error';
+    progress: number;
+    currentModel: string;
+    message: string;
+  }>({
+    stage: 'idle',
+    progress: 0,
+    currentModel: '',
+    message: ''
+  });
 
   const canAnalyze = mode === 'single' ? !!fileA : (!!fileA && !!fileB);
+
+  // Reset status when files change
+  useEffect(() => {
+    if (!loading) {
+      setAnalysisStatus({
+        stage: 'idle',
+        progress: 0,
+        currentModel: '',
+        message: ''
+      });
+    }
+  }, [fileA, fileB, loading]);
+
+// Status indicator component
+const AnalysisStatus = () => {
+  if (analysisStatus.stage === 'idle' || (!loading && !result)) return null;
+  
+  const getStatusColor = () => {
+    switch (analysisStatus.stage) {
+      case 'error': return 'oklch(0.65 0.13 20)';
+      case 'complete': return 'oklch(0.65 0.13 145)';
+      default: return ACCENT;
+    }
+  };
+
+  const getStatusIcon = () => {
+    switch (analysisStatus.stage) {
+      case 'uploading': return '⬆️';
+      case 'sam3': return '👁️';
+      case 'tribev2': return '🧠';
+      case 'narrative': return '✍️';
+      case 'complete': return '✅';
+      case 'error': return '❌';
+      default: return '⏳';
+    }
+  };
+
+  return (
+    <div style={{
+      background: 'white', borderRadius: 16, padding: 20,
+      border: '1px solid oklch(0.92 0.005 90)',
+      marginBottom: 24, boxShadow: '0 4px 12px -2px rgba(0,0,0,0.03)'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+        <span style={{ fontSize: 20 }}>{getStatusIcon()}</span>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--v3-ink)', marginBottom: 2 }}>
+            {analysisStatus.currentModel}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--v3-ink-3)' }}>
+            {analysisStatus.message}
+          </div>
+        </div>
+        <div style={{
+          fontSize: 12, fontWeight: 600, color: getStatusColor(),
+          background: `${getStatusColor()}15`, padding: '4px 8px', borderRadius: 999
+        }}>
+          {analysisStatus.progress}%
+        </div>
+      </div>
+      
+      {/* Progress bar */}
+      <div style={{
+        height: 4, background: 'oklch(0.95 0.005 90)', borderRadius: 999,
+        overflow: 'hidden'
+      }}>
+        <div style={{
+          width: `${analysisStatus.progress}%`, height: '100%',
+          background: getStatusColor(), borderRadius: 999,
+          transition: 'width 0.3s ease'
+        }} />
+      </div>
+      
+      {/* Stage indicators */}
+      <div style={{ 
+        display: 'flex', justifyContent: 'space-between', 
+        marginTop: 12, fontSize: 10, color: 'var(--v3-ink-3)'
+      }}>
+        {[
+          { stage: 'uploading', label: 'Upload' },
+          { stage: 'sam3', label: 'Vision' },
+          { stage: 'tribev2', label: 'Brain' },
+          { stage: 'narrative', label: 'AI' },
+          { stage: 'complete', label: 'Done' }
+        ].map((item, index) => {
+          const isCompleted = 
+            (analysisStatus.stage === 'complete' && index <= 4) ||
+            (analysisStatus.stage === 'narrative' && index <= 3) ||
+            (analysisStatus.stage === 'tribev2' && index <= 2) ||
+            (analysisStatus.stage === 'sam3' && index <= 1) ||
+            (analysisStatus.stage === 'uploading' && index <= 0);
+          
+          return (
+            <div key={item.stage} style={{
+              display: 'flex', alignItems: 'center', gap: 4,
+              color: isCompleted ? getStatusColor() : 'var(--v3-ink-3)'
+            }}>
+              <div style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: isCompleted ? getStatusColor() : 'oklch(0.92 0.005 90)'
+              }} />
+              {item.label}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
 
   const handleAnalyze = async () => {
     if (!fileA) return;
     setLoading(true); setError(null); setResult(null);
+    
+    // Reset status
+    setAnalysisStatus({
+      stage: 'uploading',
+      progress: 10,
+      currentModel: 'File Upload',
+      message: 'Uploading files to server...'
+    });
+
     try {
       const fd = new FormData();
       fd.append('files', fileA);
       if (mode === 'compare' && fileB) fd.append('files', fileB);
       fd.append('objective', objective);
       fd.append('audience_segment', audience);
+      
+      setAnalysisStatus({
+        stage: 'sam3',
+        progress: 30,
+        currentModel: 'SAM3 Vision Model',
+        message: 'Analyzing visual elements and segments...'
+      });
+
       const res = await fetch(`${BACKEND}/analyze-full`, { method: 'POST', body: fd });
       if (!res.ok) throw new Error(`Server error ${res.status}`);
+      
+      setAnalysisStatus({
+        stage: 'tribev2',
+        progress: 60,
+        currentModel: 'TribeV2 Brain Model',
+        message: 'Processing neural activation patterns...'
+      });
+
       const data = await res.json();
-      console.log('Analysis result:', data);
+      
+      setAnalysisStatus({
+        stage: 'narrative',
+        progress: 85,
+        currentModel: 'AI Narrative',
+        message: 'Generating insights and recommendations...'
+      });
+      
+      // Small delay to show narrative stage
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      setAnalysisStatus({
+        stage: 'complete',
+        progress: 100,
+        currentModel: 'Complete',
+        message: 'Analysis finished successfully!'
+      });
+      
       setResult(data);
     } catch (e: any) {
+      setAnalysisStatus({
+        stage: 'error',
+        progress: 0,
+        currentModel: 'Error',
+        message: e.message ?? 'Analysis failed'
+      });
       setError(e.message ?? 'Analysis failed');
     } finally {
       setLoading(false);
@@ -478,18 +646,15 @@ export default function AnalyzePage() {
           </div>
         </div>
 
+        {/* Analysis Status */}
+        <AnalysisStatus />
+
         {/* Results */}
         {(result || loading) && (
           <>
-            {result?.mode === 'compare' && result.variants.length === 2 ? (
+            {(result?.mode === 'compare' && result.variants.length === 2) || (mode === 'compare' && fileA && fileB) ? (
               <ComparisonSection result={result} fileA={fileA} fileB={fileB} />
             ) : (<>
-            {/* Debug: Show mode info */}
-            {result && (
-              <div style={{ padding: 10, background: 'yellow', marginBottom: 10 }}>
-                Debug: mode={result.mode}, variants={result.variants.length}
-              </div>
-            )}
             {/* Composite + scores */}
             <div style={{
               background: 'white', borderRadius: 20,
@@ -680,10 +845,25 @@ function VariantCard({ file, variant, label, isWinner }: {
 
 // ── Enhanced A/B Comparison Section ───────────────────────────────────────────────
 function ComparisonSection({ result, fileA, fileB }: {
-  result: AnalysisResult;
+  result: AnalysisResult | null;
   fileA: File | null;
   fileB: File | null;
 }) {
+  // If no result yet, show placeholder
+  if (!result) {
+    return (
+      <div style={{
+        background: 'white', borderRadius: 20, padding: 40,
+        border: '1px solid oklch(0.92 0.005 90)',
+        textAlign: 'center', color: 'var(--v3-ink-3)'
+      }}>
+        <div style={{ fontSize: 24, marginBottom: 10 }}>⚖️</div>
+        <div style={{ fontSize: 16, fontWeight: 600, marginBottom: 8 }}>A/B Test Ready</div>
+        <div style={{ fontSize: 13 }}>Upload both creatives and click "Analyze" to compare</div>
+      </div>
+    );
+  }
+
   const varA = result.variants[0];
   const varB = result.variants[1];
   const bc   = result.brain_compare;
