@@ -1,73 +1,187 @@
-# 🚀 ArcAnalytics - HACKATHON DEPLOYMENT
+# 🚀 ArcAnalytics Deployment Guide
 
-## ✅ Project Status: READY TO DEPLOY
+Quick deployment guide for hackathon and production environments.
 
-- ✅ Full-stack application with database
-- ✅ AI-powered image analysis
-- ✅ Real-time dashboard
-- ✅ Production configuration
-- ✅ Security best practices
+## ⚡ One-Click Render Deployment (Recommended)
 
-## 🎯 One-Click Deployment
+1. **Fork & Push**
+   ```bash
+   git clone https://github.com/molyleelatham/arcanalytics.git
+   # Make your changes
+   git push origin main
+   ```
 
-### Deploy to Render (Recommended)
+2. **Connect to Render**
+   - Go to [render.com](https://render.com)
+   - Click "New" → "Web Service"
+   - Connect your GitHub repository
+   - Render auto-detects `render.yaml` configuration
 
-1. **Go to [Render Dashboard](https://dashboard.render.com)**
-2. **Click "New +" → "Web Service"**
-3. **Connect GitHub repository** (`arcanalytics-merge-test`)
-4. **Render auto-detects `render.yaml`**
-5. **Click "Create Web Service"**
+3. **Set Environment Variables**
+   In Render dashboard → Environment:
+   ```
+   DATABASE_URL=postgresql://...
+   OPENAI_API_KEY=your_openai_key
+   GOOGLE_API_KEY=your_google_key
+   ROBOFLOW_API_KEY=your_roboflow_key
+   ROBOFLOW_WORKSPACE=your_workspace
+   ROBOFLOW_PROJECT=your_project
+   ROBOFLOW_VERSION=your_version
+   ```
 
-### What Happens Automatically
+4. **Deploy** 🎉
+   - Render automatically builds and deploys
+   - Backend, frontend, and database provisioned automatically
+   - Your app will be live at `https://your-app.onrender.com`
 
-- ✅ PostgreSQL database created
-- ✅ Backend connects to database (secure internal access)
-- ✅ Migration runs automatically
-- ✅ Frontend connects to backend
-- ✅ Real-time dashboard shows live data
+## 🏗️ Manual Local Development
 
-## 🔥 Demo Features
+### Prerequisites
+```bash
+# Check versions
+node --version    # Should be 18+
+python3 --version # Should be 3.14+
+```
 
-### AI Analysis Pipeline
-- **Computer Vision**: SAM3 visual segmentation
-- **Brain Analysis**: Neural response prediction
-- **Scoring**: Purchase, Engagement, Virality, Clarity
-- **A/B Testing**: Compare multiple variants
+### Setup
+```bash
+# 1. Clone and setup
+git clone https://github.com/molyleelatham/arcanalytics.git
+cd arcanalytics
 
-### Real-Time Dashboard
-- Live analysis count and statistics
-- Historical data visualization
-- Top performing creatives
-- Database connection status
-- Mobile-responsive design
+# 2. Environment
+cp .env.example .env
+# Edit .env with your API keys
 
-## 🏆 Hackathon Advantages
+# 3. Backend
+cd backend
+python3 -m pip install -r requirements.txt
+python3 main.py
 
-1. **Full-Stack Architecture** - Modern tech stack
-2. **AI Integration** - Computer vision + neural analysis
-3. **Real Database** - PostgreSQL with persistence
-4. **Production Ready** - Deployed on real infrastructure
-5. **Security** - Best practices implemented
+# 4. Frontend (new terminal)
+cd frontend
+npm install
+npm run dev
+```
 
-## 📱 Test Your Deployment
+### Access
+- Frontend: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Docs: http://localhost:8000/docs
 
-After deployment:
-1. Visit your frontend URL
-2. Click "+ New analysis"
-3. Upload any image
-4. Watch results appear in dashboard instantly!
+## 🔧 Required API Keys
 
-## 🎯 Ready to Win!
+Get these keys before deployment:
 
-Your ArcAnalytics application is **100% production-ready** with:
-- AI-powered analysis
-- Real database persistence
-- Beautiful dashboard
-- Professional deployment
-- Enterprise security
+### OpenAI
+- Visit [platform.openai.com](https://platform.openai.com)
+- Create API key
+- Add to environment variables
 
-**Deploy now and impress the judges!** 🚀
+### Google AI
+- Visit [ai.google.dev](https://ai.google.dev)
+- Create API key
+- Add to environment variables
+
+### Roboflow
+- Visit [roboflow.com](https://roboflow.com)
+- Create workspace and project
+- Get API key, workspace, project, version
+- Add to environment variables
+
+## 🗄️ Database Setup
+
+### Render (Automatic)
+- Render PostgreSQL is provisioned automatically
+- Connection string provided in Render dashboard
+
+### Local
+```bash
+# Install PostgreSQL
+brew install postgresql  # macOS
+sudo apt install postgresql  # Ubuntu
+
+# Create database
+createdb arcanalytics
+
+# Setup tables
+psql arcanalytics -f database/schema.sql
+```
+
+## 🐛 Common Issues & Fixes
+
+### Build Failures
+```bash
+# Clear node modules
+rm -rf frontend/node_modules
+cd frontend && npm install
+
+# Clear Python cache
+find . -name "__pycache__" -type d -exec rm -rf {} +
+```
+
+### Database Connection
+```bash
+# Test connection
+python3 -c "import backend.database; print('Database OK')"
+```
+
+### API Key Issues
+- Verify all keys are set in environment
+- Check for trailing spaces in keys
+- Ensure keys have proper permissions
+
+## 📱 Testing Your Deployment
+
+1. **Health Check**
+   - Visit `/api/health` endpoint
+   - Should return `{"status": "ok"}`
+
+2. **Upload Test**
+   - Navigate to Analyze page
+   - Upload a test image
+   - Verify analysis completes
+
+3. **API Test**
+   ```bash
+   curl -X POST http://localhost:8000/analyze \
+     -F "file=@test-image.jpg"
+   ```
+
+## 🚀 Production Optimizations
+
+### Performance
+- Enable Redis caching (optional)
+- Configure CDN for static assets
+- Set up monitoring and alerts
+
+### Security
+- Enable HTTPS (automatic on Render)
+- Set up API rate limiting
+- Configure CORS properly
+
+### Scaling
+- Render automatically scales based on load
+- Consider larger instances for high traffic
+- Set up database backups
+
+## 🆘 Emergency Rollback
+
+If deployment fails:
+```bash
+# Rollback to previous commit
+git log --oneline
+git revert <commit-hash>
+git push origin main
+```
+
+## 📞 Support
+
+- **Documentation**: Check README.md
+- **API Docs**: Visit `/docs` endpoint
+- **Issues**: Create GitHub issue
+- **Quick Fix**: Redeploy on Render
 
 ---
 
-*Built with modern web technologies - Ready for production*
+**🎯 Your ArcAnalytics app should be live in under 10 minutes!**
