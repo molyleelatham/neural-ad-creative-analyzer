@@ -1,319 +1,203 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState } from 'react';
+import Link from 'next/link';
+import { V3Nav } from '@/components/V3Nav';
+import { ROITimeline } from '@/components/BrainViz';
 
-// Types for dashboard data
-type DashboardStats = {
-  totalAnalyses: number;
-  avgPerformance: number;
-  attentionScore: number;
-  avgEngagement: number;
-  recentAnalyses: Array<{
-    id: string;
-    filename: string;
-    score: number;
-    analyzedAt: string;
-    objective: string;
-  }>;
-  insights: Array<{
-    type: "positive" | "warning" | "info";
-    title: string;
-    description: string;
-  }>;
-};
+const ACCENT = 'oklch(0.55 0.08 180)';
+
+const REPORTS = [
+  { id: '0428', name: 'Hero_v3_final.mp4',       objective: 'Engagement', score: 78.4, trend: '+12', status: 'strong', seed: 0 },
+  { id: '0427', name: 'Spring_Launch_A.jpg',      objective: 'Purchase',   score: 84.1, trend: '+18', status: 'strong', seed: 1 },
+  { id: '0427', name: 'Spring_Launch_B.jpg',      objective: 'Purchase',   score: 71.6, trend: '−3',  status: 'avg',    seed: 2 },
+  { id: '0425', name: 'Cohort_Static_07.png',     objective: 'Clarity',    score: 62.0, trend: '−9',  status: 'weak',   seed: 3 },
+  { id: '0422', name: 'TikTok_Demo_A.mp4',        objective: 'Virality',   score: 89.7, trend: '+24', status: 'strong', seed: 4 },
+  { id: '0418', name: 'Display_300x250.gif',      objective: 'Engagement', score: 54.3, trend: '−14', status: 'weak',   seed: 5 },
+];
+
+function MiniSpark({ seed = 0 }: { seed: number }) {
+  const N = 20;
+  const pts = Array.from({ length: N }, (_, i) => {
+    const v = 0.5 + 0.4 * Math.sin(i * 0.6 + seed) + 0.2 * Math.cos(i * 0.3 + seed * 1.7);
+    return [(i / (N - 1)) * 100, 30 - v * 26] as [number, number];
+  });
+  const path = pts.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0]} ${p[1]}`).join(' ');
+  const area = `${path} L 100 30 L 0 30 Z`;
+  return (
+    <svg viewBox="0 0 100 30" style={{ width: '100%', height: 28 }} preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={`spark-${seed}`} x1="0" x2="0" y1="0" y2="1">
+          <stop offset="0%"   stopColor={ACCENT} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={ACCENT} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill={`url(#spark-${seed})`} />
+      <path d={path} stroke={ACCENT} strokeWidth="1.5" fill="none" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function card() {
+  return {
+    background: 'white', borderRadius: 16, padding: 24,
+    border: '1px solid oklch(0.93 0.005 90)',
+    boxShadow: '0 4px 16px -4px rgba(0,0,0,0.04)',
+  } as React.CSSProperties;
+}
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [period, setPeriod] = useState('30D');
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  async function fetchDashboardData() {
-    try {
-      setLoading(true);
-      // For now, use mock data until we implement a proper dashboard endpoint
-      // TODO: Replace with real API call to /api/dashboard when available
-      const mockData: DashboardStats = {
-        totalAnalyses: 24,
-        avgPerformance: 78.5,
-        attentionScore: 92.3,
-        avgEngagement: 2.4,
-        recentAnalyses: [
-          { id: "1", filename: "campaign_ad_1.jpg", score: 85, analyzedAt: "2 days ago", objective: "engagement" },
-          { id: "2", filename: "product_launch.png", score: 78, analyzedAt: "3 days ago", objective: "purchase" },
-          { id: "3", filename: "brand_awareness.jpg", score: 92, analyzedAt: "5 days ago", objective: "clarity" },
-        ],
-        insights: [
-          { type: "positive", title: "Strong CTA Performance", description: "Your call-to-action buttons are performing 23% above average" },
-          { type: "warning", title: "Logo Visibility Issue", description: "Consider increasing brand logo size by 15%" },
-          { type: "info", title: "Emotional Connection", description: "Face detection shows strong emotional engagement" },
-        ],
-      };
-      
-      setStats(mockData);
-    } catch (err) {
-      setError("Failed to load dashboard data");
-    } finally {
-      setLoading(false);
-    }
-  }
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600" />
-              <span className="text-lg font-bold text-gray-900">ArcAnalytics</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <Link href="/" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-                Home
-              </Link>
-              <Link href="/analyze" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-                Analyze
-              </Link>
-              <Link href="/dashboard" className="text-sm font-medium text-blue-600">
-                Dashboard
-              </Link>
-              <Link
-                href="/analyze"
-                className="btn-primary"
-              >
-                New Analysis
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div style={{ background: 'oklch(0.98 0.005 90)', minHeight: '100vh', fontFamily: 'var(--v3-font-sans)' }}>
+      <V3Nav currentPage="dashboard" />
 
-      <div className="mx-auto max-w-7xl px-6 py-12">
+      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 40px 80px' }}>
+
         {/* Header */}
-        <header className="mb-8">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <div className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
-                Dashboard
-              </div>
-              <h1 className="mt-1 text-3xl font-bold text-gray-900">
-                Brand Overview
-              </h1>
-              <p className="mt-2 text-gray-600">
-                Track your ad performance and discover insights to optimize your marketing strategy
-              </p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 28 }}>
+          <div>
+            <div className="mono" style={{ fontSize: 11, color: ACCENT, fontWeight: 600, letterSpacing: '0.1em', marginBottom: 6 }}>
+              ● ACME COSMETICS
             </div>
-            <Link
-              href="/analyze"
-              className="btn-primary"
-            >
-              New Analysis
-            </Link>
+            <h1 style={{
+              fontFamily: 'var(--v3-font-serif)',
+              fontSize: 52, fontWeight: 400, margin: 0, letterSpacing: '-0.025em',
+              color: 'var(--v3-ink)',
+            }}>
+              Brand overview
+            </h1>
           </div>
-        </header>
+          <Link href="/analyze" className="v3-btn v3-btn-primary">+ New analysis</Link>
+        </div>
 
-        {/* Stats Grid */}
-        {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-xl border border-gray-200 p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+        {/* Stat cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+          {[
+            { k: 'Avg composite', v: '74.1', d: '+4.2 vs last mo', up: true },
+            { k: 'Top performer',  v: '89.7', d: 'TikTok_Demo_A',  up: true },
+            { k: 'Industry pctile', v: '72',  d: 'cosmetics',       up: true },
+            { k: 'Top pattern',    v: 'Face', d: '11/24 reports',   up: null },
+          ].map((s) => (
+            <div key={s.k} style={card()}>
+              <div style={{ fontSize: 12, color: 'var(--v3-ink-3)', marginBottom: 8 }}>{s.k}</div>
+              <div style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 40, fontWeight: 400, lineHeight: 1, letterSpacing: '-0.02em', color: 'var(--v3-ink)' }}>
+                {s.v}
               </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
+                {s.up !== null && (
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, padding: '2px 6px', borderRadius: 4,
+                    background: s.up ? 'oklch(0.94 0.06 155)' : 'oklch(0.94 0.06 30)',
+                    color: s.up ? 'oklch(0.4 0.13 155)' : 'oklch(0.4 0.13 30)',
+                  }}>{s.up ? '↑' : '↓'}</span>
+                )}
+                <span style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>{s.d}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Brand overview notes */}
+        <p style={{ fontSize: 13, color: 'var(--v3-ink-3)', margin: '-8px 0 24px', lineHeight: 1.6 }}>
+          This page is designed for submission to understand what this data could end up being, being able to run at full scale we would be able to give out baseline averages for industries and also understand how marketing and targeting in different industries affect our brain.
+        </p>
+
+        {/* Trend chart */}
+        <div style={{ ...card(), padding: 28, marginBottom: 24 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
+            <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 24, fontWeight: 400, margin: 0, color: 'var(--v3-ink)' }}>
+              Composite trend
+            </h3>
+            <div style={{ display: 'flex', gap: 6 }}>
+              {['7D', '30D', '90D'].map((p) => (
+                <button key={p} onClick={() => setPeriod(p)} style={{
+                  padding: '4px 12px', fontSize: 11, fontWeight: 500,
+                  background: period === p ? 'oklch(0.97 0.005 90)' : 'transparent',
+                  border: '1px solid oklch(0.93 0.005 90)',
+                  borderRadius: 999, fontFamily: 'inherit', cursor: 'pointer',
+                  color: 'var(--v3-ink)',
+                }}>{p}</button>
+              ))}
+            </div>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--v3-ink-3)', margin: '0 0 16px' }}>Last {period} · {REPORTS.length} reports</p>
+          <ROITimeline height={140} />
+        </div>
+
+        {/* Reports table */}
+        <div style={{ background: 'white', borderRadius: 20, border: '1px solid oklch(0.92 0.005 90)', overflow: 'hidden', boxShadow: '0 4px 16px -4px rgba(0,0,0,0.04)' }}>
+          <div style={{
+            padding: '20px 24px', borderBottom: '1px solid oklch(0.95 0.005 90)',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 22, fontWeight: 400, margin: 0, color: 'var(--v3-ink)' }}>
+              Recent reports
+            </h3>
+            <button style={{
+              fontSize: 12, color: ACCENT, background: 'transparent', border: 'none',
+              fontFamily: 'inherit', cursor: 'pointer', fontWeight: 500,
+            }}>View all →</button>
+          </div>
+
+          {/* Table header */}
+          <div style={{
+            display: 'grid', gridTemplateColumns: '60px 2fr 1fr 100px 80px 80px',
+            padding: '12px 24px',
+            background: 'oklch(0.985 0.003 90)',
+            borderBottom: '1px solid oklch(0.95 0.005 90)',
+          }}>
+            {['#', 'Creative', 'Objective', 'Trend', 'Δ', 'Score'].map((h, i) => (
+              <span key={i} className="mono" style={{
+                fontSize: 10, color: 'var(--v3-ink-3)', fontWeight: 600,
+                letterSpacing: '0.1em', textTransform: 'uppercase',
+                textAlign: i >= 3 ? 'right' : 'left',
+              }}>{h}</span>
             ))}
           </div>
-        ) : error ? (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-8">
-            <p className="text-red-800">{error}</p>
-          </div>
-        ) : stats ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="card-hover bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <span className="text-sm text-green-600 font-semibold">+12%</span>
+
+          {REPORTS.map((r, i) => (
+            <div key={i} style={{
+              display: 'grid', gridTemplateColumns: '60px 2fr 1fr 100px 80px 80px',
+              padding: '16px 24px', alignItems: 'center',
+              borderBottom: i < REPORTS.length - 1 ? '1px solid oklch(0.96 0.005 90)' : 'none',
+              cursor: 'pointer',
+              transition: 'background 0.15s',
+            }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'oklch(0.985 0.003 90)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+            >
+              <span className="mono" style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>{r.id}</span>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 32, height: 40, borderRadius: 6, flexShrink: 0,
+                  background: `linear-gradient(135deg, oklch(0.94 0.04 ${30 + r.seed * 50}), oklch(0.92 0.05 ${100 + r.seed * 30}))`,
+                }} />
+                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--v3-ink)' }}>{r.name}</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{stats.totalAnalyses}</div>
-              <div className="text-sm text-gray-600">Total Analyses</div>
-            </div>
 
-            <div className="card-hover bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                </div>
-                <span className="text-sm text-green-600 font-semibold">+8%</span>
+              <span style={{
+                fontSize: 11, fontWeight: 500, padding: '3px 10px', borderRadius: 999,
+                background: 'oklch(0.97 0.005 90)', color: 'var(--v3-ink-2)',
+                width: 'fit-content',
+              }}>{r.objective}</span>
+
+              <div style={{ paddingRight: 12 }}>
+                <MiniSpark seed={r.seed} />
               </div>
-              <div className="text-2xl font-bold text-gray-900">{stats.avgPerformance}%</div>
-              <div className="text-sm text-gray-600">Avg. Performance</div>
-            </div>
 
-            <div className="card-hover bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                </div>
-                <span className="text-sm text-green-600 font-semibold">+15%</span>
-              </div>
-              <div className="text-2xl font-bold text-gray-900">{stats.attentionScore}%</div>
-              <div className="text-sm text-gray-600">Attention Score</div>
-            </div>
+              <span className="mono" style={{
+                fontSize: 12, fontWeight: 600, textAlign: 'right',
+                color: r.trend.startsWith('−') ? 'var(--v3-bad)' : 'var(--v3-good)',
+              }}>{r.trend}</span>
 
-            <div className="card-hover bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center">
-                  <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-                <span className="text-sm text-green-600 font-semibold">+5%</span>
-              </div>
-              <div className="text-2xl font-bold text-gray-900">{stats.avgEngagement}s</div>
-              <div className="text-sm text-gray-600">Avg. Engagement</div>
+              <span style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 22, textAlign: 'right', color: 'var(--v3-ink)' }}>
+                {r.score.toFixed(1)}
+              </span>
             </div>
-          </div>
-        ) : null}
-
-        {/* Recent Analyses */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2">
-            <div className="bg-white rounded-xl border border-gray-200 p-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Analyses</h2>
-              {loading ? (
-                <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div className="flex items-center gap-4">
-                          <div className="w-16 h-16 bg-gray-200 rounded-lg" />
-                          <div className="space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-32"></div>
-                            <div className="h-3 bg-gray-200 rounded w-24"></div>
-                            <div className="h-2 bg-gray-200 rounded w-20"></div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : stats ? (
-                <div className="space-y-4">
-                  {stats.recentAnalyses.map((analysis) => (
-                    <div key={analysis.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                          <span className="text-white font-bold text-lg">{analysis.score}</span>
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-900">{analysis.filename}</div>
-                          <div className="text-sm text-gray-600">Analyzed {analysis.analyzedAt}</div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <div className="w-24 bg-gray-200 rounded-full h-2">
-                              <div 
-                                className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all" 
-                                style={{ width: `${analysis.score}%` }} 
-                              />
-                            </div>
-                            <span className="text-xs text-gray-600">{analysis.score}% score</span>
-                            <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full capitalize">
-                              {analysis.objective}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      <Link href={`/analyze`} className="text-blue-600 hover:text-blue-700 text-sm font-medium">
-                        View Details →
-                      </Link>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-              <div className="mt-6 text-center">
-                <Link href="/analyze" className="btn-secondary">
-                  Start New Analysis
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          <div>
-            <div className="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-              <h2 className="text-lg font-semibold text-gray-900 mb-4">Top Insights</h2>
-              {loading ? (
-                <div className="space-y-3">
-                  {[1, 2, 3].map((i) => (
-                    <div key={i} className="animate-pulse">
-                      <div className="flex items-start gap-3">
-                        <div className="w-2 h-2 bg-gray-200 rounded-full mt-2" />
-                        <div className="space-y-1">
-                          <div className="h-4 bg-gray-200 rounded w-32"></div>
-                          <div className="h-3 bg-gray-200 rounded w-40"></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : stats ? (
-                <div className="space-y-3">
-                  {stats.insights.map((insight, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <div className={`w-2 h-2 rounded-full mt-2 ${
-                        insight.type === 'positive' ? 'bg-green-500' :
-                        insight.type === 'warning' ? 'bg-amber-500' : 'bg-blue-500'
-                      }`} />
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{insight.title}</div>
-                        <div className="text-xs text-gray-600">{insight.description}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : null}
-            </div>
-
-            <div className="bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl p-6 text-white">
-              <h3 className="text-lg font-semibold mb-2">Upgrade to Pro</h3>
-              <p className="text-sm text-blue-100 mb-4">
-                Get unlimited analyses, advanced insights, and team collaboration features.
-              </p>
-              <button className="w-full bg-white text-blue-600 px-4 py-2 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
-                Upgrade Now
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Development Notice */}
-        <div className="mt-8 bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-            </svg>
-            <div>
-              <h3 className="font-semibold text-blue-800">Backend Integration Ready</h3>
-              <p className="text-sm text-blue-700 mt-1">
-                This dashboard displays mock data and is ready for backend integration. The core analytics functionality with SAM3 visual analysis and TribeV2 neural encoding is fully operational in the{" "}
-                <Link href="/analyze" className="font-mono text-blue-800 underline">/analyze</Link> section.
-              </p>
-              <p className="text-sm text-blue-600 mt-2">
-                <strong>Backend endpoints:</strong> <code className="bg-blue-100 px-1 rounded">/analyze-full</code>, <code className="bg-blue-100 px-1 rounded">/compare</code>, <code className="bg-blue-100 px-1 rounded">/health</code>
-              </p>
-            </div>
-          </div>
+          ))}
         </div>
       </div>
     </div>

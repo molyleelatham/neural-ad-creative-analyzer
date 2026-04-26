@@ -1,355 +1,419 @@
-import Link from "next/link";
-import { BrainViz } from "@/components/BrainViz";
+"use client";
 
-export default function Home() {
+import Link from 'next/link';
+import { V3Nav } from '@/components/V3Nav';
+import { V3Aurora } from '@/components/V3Aurora';
+import { BrainViz, ROITimeline } from '@/components/BrainViz';
+
+const ACCENT = 'oklch(0.55 0.08 180)';
+
+export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
-      {/* Navigation */}
-      <nav className="border-b border-gray-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600" />
-              <span className="text-lg font-bold text-gray-900">ArcAnalytics</span>
-            </div>
-            <div className="flex items-center gap-6">
-              <Link href="#features" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-                Features
-              </Link>
-              <Link href="#how-it-works" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-                How it Works
-              </Link>
-              <Link href="/dashboard" className="text-sm font-medium text-gray-600 hover:text-gray-900">
-                Dashboard
-              </Link>
-              <Link
-                href="/analyze"
-                className="btn-primary"
-              >
-                Get Started
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+    <div style={{ background: 'var(--v3-bg)', fontFamily: 'var(--v3-font-sans)' }}>
+      <V3Nav currentPage="home" />
 
-      {/* Hero Section */}
-      <section className="relative overflow-hidden">
-        <div className="mx-auto max-w-7xl px-6 py-20">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Left Content */}
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <div className="inline-flex items-center rounded-full bg-blue-100 px-4 py-2 text-sm font-semibold text-blue-800">
-                  🧠 AI-Powered Ad Intelligence
-                </div>
-                <h1 className="text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
-                  Understand What Your
-                  <span className="gradient-text"> Customers Really See</span>
-                </h1>
-                <p className="text-xl text-gray-600 leading-relaxed">
-                  Arcanalytics combines SAM3 computer vision with TribeV2 neural encoding to reveal 
-                  exactly what captures attention in your ads. Get actionable insights with 
-                  statistical confidence to optimize your creative performance.
-                </p>
-              </div>
+      {/* ── Hero ── */}
+      <section style={{ position: 'relative', padding: '72px 40px 100px', overflow: 'hidden' }}>
+        <V3Aurora />
+        <div style={{
+          position: 'relative', maxWidth: 1200, margin: '0 auto',
+          display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 80, alignItems: 'center',
+        }}>
+          {/* Left copy */}
+          <div>
+            {/* Badge */}
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '6px 12px 6px 6px', borderRadius: 999,
+              background: 'white', border: '1px solid oklch(0.92 0.005 90)',
+              fontSize: 12, fontWeight: 500,
+              boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+              marginBottom: 28,
+            }}>
+              <span style={{
+                fontSize: 10, fontWeight: 600, color: 'white',
+                background: ACCENT, padding: '3px 8px', borderRadius: 999,
+              }}>NEW</span>
+              <span>TribeV2 brain encoder · live</span>
+              <span style={{ color: 'var(--v3-ink-3)' }}>→</span>
+            </div>
 
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link
-                  href="/analyze"
-                  className="btn-primary text-base px-8 py-4"
+            {/* Headline */}
+            <h1 style={{
+              fontFamily: 'var(--v3-font-serif)',
+              fontSize: 'clamp(56px, 6.5vw, 88px)',
+              lineHeight: 0.95,
+              fontWeight: 400,
+              letterSpacing: '-0.035em',
+              margin: '0 0 32px',
+              color: 'var(--v3-ink)',
+            }}>
+              Know what your<br />
+              ad does to the<br />
+              <span style={{ position: 'relative', display: 'inline-block' }}>
+                <em style={{
+                  fontStyle: 'italic',
+                  background: `linear-gradient(120deg, ${ACCENT} 0%, oklch(0.65 0.14 200) 50%, oklch(0.62 0.16 45) 100%)`,
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                }}>brain</em>
+                {/* Hand-drawn swoosh underline */}
+                <svg
+                  width="100%" height="14" viewBox="0 0 240 14"
+                  preserveAspectRatio="none"
+                  style={{ position: 'absolute', left: 0, bottom: -4, pointerEvents: 'none' }}
                 >
-                  Analyze Your Ad
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </Link>
-                <Link
-                  href="#how-it-works"
-                  className="btn-secondary text-base px-8 py-4"
-                >
-                  Watch Demo
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h1m4 0h1m-6 4h8m-5-10V3a2 2 0 00-2-2H8a2 2 0 00-2 2v4m8 0V7a2 2 0 012-2h2a2 2 0 012 2v4" />
-                  </svg>
-                </Link>
-              </div>
+                  <path
+                    d="M2,10 Q60,2 120,8 T238,6"
+                    stroke={ACCENT} strokeWidth="2" fill="none" strokeLinecap="round"
+                  />
+                </svg>
+              </span>{' '}
+              — before you spend.
+            </h1>
 
-              {/* Trust indicators */}
-              <div className="flex items-center gap-8 pt-4">
-                <div className="flex items-center gap-2">
-                  <div className="flex -space-x-2">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="h-8 w-8 rounded-full bg-gray-300 border-2 border-white" />
-                    ))}
-                  </div>
-                  <span className="text-sm text-gray-600">500+ marketers trust ArcAnalytics</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <svg key={i} className="w-4 h-4 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                      <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
-                    </svg>
-                  ))}
-                  <span className="text-sm text-gray-600">4.9/5 rating</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right - Brain Visualization */}
-            <div className="relative">
-              <div className="relative z-10 glass-effect rounded-3xl p-8">
-                <div className="aspect-square max-w-md mx-auto">
-                  <BrainViz size={400} showLabels={true} mono={false} intensity={1} />
-                </div>
-              </div>
-              {/* Floating elements */}
-              <div className="absolute top-10 -right-4 w-20 h-20 bg-blue-200 rounded-full opacity-60 animate-pulse" />
-              <div className="absolute bottom-10 -left-4 w-16 h-16 bg-purple-200 rounded-full opacity-60 animate-pulse" />
-              <div className="absolute top-1/3 -left-8 w-12 h-12 bg-pink-200 rounded-full opacity-40 animate-pulse" />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Powerful Features for Smart Marketing
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Leverage cutting-edge AI to understand exactly how your audience interacts with your creative
+            <p style={{
+              fontSize: 18, lineHeight: 1.55, color: 'var(--v3-ink-2)',
+              maxWidth: 480, margin: '0 0 36px', fontWeight: 400,
+            }}>
+              Upload an ad. Computer vision finds every element, our neural encoder predicts what
+              the viewer's brain does next, and you get plain-English fixes ranked by lift.
             </p>
-          </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="card-hover bg-white rounded-2xl border border-gray-200 p-8">
-              <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Computer Vision Analysis
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Automatically detect faces, CTAs, logos, and key visual elements that capture attention.
-              </p>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  SAM3-powered visual element detection
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Visual weight & confidence scoring
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Pillar-based performance analysis
-                </li>
-              </ul>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 56 }}>
+              <Link href="/analyze" className="v3-btn v3-btn-primary" style={{ fontSize: 14, padding: '14px 24px' }}>
+                Analyze your first ad →
+              </Link>
+              <Link href="/analyze" className="v3-btn v3-btn-secondary" style={{ fontSize: 14, padding: '14px 22px' }}>
+                <span style={{
+                  width: 18, height: 18, borderRadius: '50%',
+                  background: ACCENT, color: 'white',
+                  display: 'grid', placeItems: 'center', fontSize: 9,
+                }}>▶</span>
+                Watch demo · 0:48
+              </Link>
             </div>
 
-            <div className="card-hover bg-white rounded-2xl border border-gray-200 p-8">
-              <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                </svg>
+            {/* Trust strip */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+              <span className="mono" style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>TRUSTED BY MARKETERS AT</span>
+              <div style={{ display: 'flex', gap: 28, alignItems: 'center', opacity: 0.5 }}>
+                {['Acme', 'Lumen', 'Halo', 'Vertex', 'Northbeam'].map((n) => (
+                  <span key={n} style={{
+                    fontFamily: 'var(--v3-font-serif)',
+                    fontSize: 17, fontWeight: 500, letterSpacing: '-0.01em',
+                  }}>{n}</span>
+                ))}
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                Neural Data Processing
-              </h3>
-              <p className="text-gray-600 mb-4">
-                TribeV2 integration measures real brain responses to predict engagement and conversion.
-              </p>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  TribeV2 ROI activation mapping
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  P(Convert) timeline analysis
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Neurological pillar scoring
-                </li>
-              </ul>
-            </div>
-
-            <div className="card-hover bg-white rounded-2xl border border-gray-200 p-8">
-              <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">
-                A/B Testing Intelligence
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Compare multiple variants with statistical confidence and get clear winner recommendations.
-              </p>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Head-to-head A/B testing
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  Confidence interval analysis
-                </li>
-                <li className="flex items-center gap-2">
-                  <svg className="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                  AI-powered recommendations
-                </li>
-              </ul>
             </div>
           </div>
+
+          {/* Right — floating hero card */}
+          <HeroCard />
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how-it-works" className="py-20 bg-gray-50">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              How ArcAnalytics Works
+      {/* ── Live preview ── */}
+      <section style={{ padding: '24px 40px 80px', position: 'relative' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 24 }}>
+            <div>
+              <span className="mono" style={{ fontSize: 11, color: ACCENT, fontWeight: 600, letterSpacing: '0.1em' }}>● LIVE PREVIEW</span>
+              <h2 style={{
+                fontFamily: 'var(--v3-font-serif)',
+                fontSize: 48, fontWeight: 400,
+                margin: '6px 0 0', letterSpacing: '-0.02em',
+                color: 'var(--v3-ink)',
+              }}>
+                A report, end to end.
+              </h2>
+            </div>
+            <span style={{ fontSize: 13, color: 'var(--v3-ink-3)' }}>example · cosmetics campaign · 14s spot</span>
+          </div>
+          <ReportPreview />
+        </div>
+      </section>
+
+      {/* ── How it works ── */}
+      <section style={{ padding: '60px 40px 100px', background: 'white', borderTop: '1px solid oklch(0.92 0.005 90)' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 56 }}>
+            <span className="mono" style={{ fontSize: 11, color: ACCENT, fontWeight: 600, letterSpacing: '0.1em' }}>HOW IT WORKS</span>
+            <h2 style={{
+              fontFamily: 'var(--v3-font-serif)',
+              fontSize: 'clamp(36px, 4vw, 56px)', fontWeight: 400,
+              margin: '8px 0 0', letterSpacing: '-0.025em',
+              color: 'var(--v3-ink)',
+            }}>
+              From upload to insight in{' '}
+              <em style={{ color: ACCENT, fontStyle: 'italic' }}>under 30 seconds.</em>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Get actionable insights in three simple steps
-            </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                1
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 24 }}>
+            {[
+              { n: '01', t: 'Upload',  d: 'Drop an image or video. Single ad or A/B compare with two creatives.', icon: '↑' },
+              { n: '02', t: 'Analyze', d: 'Computer vision segments every element. TribeV2 encodes 6 cortical regions.', icon: '◎' },
+              { n: '03', t: 'Act',     d: 'Get a composite score, A/B winner, and ranked recommendations with projected lift.', icon: '→' },
+            ].map((s) => (
+              <div key={s.n} style={{
+                position: 'relative', padding: 28, borderRadius: 20,
+                background: 'oklch(0.985 0.003 90)',
+                border: '1px solid oklch(0.93 0.005 90)',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  position: 'absolute', top: -20, right: -20,
+                  width: 120, height: 120, borderRadius: '50%',
+                  background: `radial-gradient(circle, ${ACCENT} 0%, transparent 70%)`,
+                  opacity: 0.08,
+                }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
+                  <span className="mono" style={{ fontSize: 11, color: 'var(--v3-ink-3)', fontWeight: 600 }}>STEP {s.n}</span>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: 10,
+                    background: 'white', border: '1px solid oklch(0.92 0.005 90)',
+                    display: 'grid', placeItems: 'center',
+                    fontSize: 16, color: ACCENT,
+                  }}>{s.icon}</div>
+                </div>
+                <h3 style={{
+                  fontFamily: 'var(--v3-font-serif)',
+                  fontSize: 32, fontWeight: 400, margin: '0 0 8px', letterSpacing: '-0.015em',
+                  color: 'var(--v3-ink)',
+                }}>{s.t}</h3>
+                <p style={{ fontSize: 14, lineHeight: 1.55, color: 'var(--v3-ink-2)', margin: 0 }}>{s.d}</p>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Upload Your Creative</h3>
-              <p className="text-gray-600">
-                Simply upload your image or video ad. Our system accepts all common formats.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                2
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">AI Analysis</h3>
-              <p className="text-gray-600">
-                SAM3 segments visual elements while TribeV2 encodes neural responses for comprehensive analysis.
-              </p>
-            </div>
-
-            <div className="text-center">
-              <div className="w-16 h-16 bg-green-600 text-white rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4">
-                3
-              </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-3">Get Insights</h3>
-              <p className="text-gray-600">
-                Receive detailed reports with scores, recommendations, and competitive insights.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
-        <div className="mx-auto max-w-4xl px-6 text-center">
-          <h2 className="text-4xl font-bold text-white mb-4">
-            Ready to Optimize Your Ads?
+      {/* ── CTA ── */}
+      <section style={{ padding: '80px 40px', background: 'var(--v3-bg)' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', textAlign: 'center', position: 'relative' }}>
+          <h2 style={{
+            fontFamily: 'var(--v3-font-serif)',
+            fontSize: 'clamp(48px, 6vw, 72px)',
+            fontWeight: 400, margin: 0, letterSpacing: '-0.03em', lineHeight: 1,
+            color: 'var(--v3-ink)',
+          }}>
+            Stop guessing.<br />
+            Start <em style={{ color: ACCENT, fontStyle: 'italic' }}>knowing.</em>
           </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            Join hundreds of marketers who are already using ArcAnalytics to create better-performing ads.
+          <p style={{ fontSize: 18, color: 'var(--v3-ink-2)', maxWidth: 540, margin: '24px auto 36px' }}>
+            Your first three reports are on us. No credit card.
           </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/analyze"
-              className="bg-white text-blue-600 px-8 py-4 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
-            >
-              Start Free Analysis
-            </Link>
-            <Link
-              href="/dashboard"
-              className="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold hover:bg-white/10 transition-colors"
-            >
-              View Dashboard
-            </Link>
-          </div>
+          <Link href="/analyze" className="v3-btn v3-btn-primary" style={{ fontSize: 15, padding: '16px 28px' }}>
+            Upload your first ad →
+          </Link>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12">
-        <div className="mx-auto max-w-7xl px-6">
-          <div className="grid md:grid-cols-4 gap-8">
+      {/* ── Footer ── */}
+      <footer style={{
+        padding: '32px 40px', borderTop: '1px solid oklch(0.92 0.005 90)',
+        background: 'white', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 26, height: 26, borderRadius: 8, display: 'grid', placeItems: 'center',
+            background: `linear-gradient(135deg, ${ACCENT}, oklch(0.65 0.13 200))`,
+          }}>
+            <div style={{ width: 8, height: 8, borderRadius: 2, background: 'white' }} />
+          </div>
+          <span style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 18, letterSpacing: '-0.02em' }}>Arcanalytics</span>
+        </div>
+        <span style={{ fontSize: 12, color: 'var(--v3-ink-3)' }}>© 2026 Arcanalytics · SAM3 · TribeV2 · Modal</span>
+      </footer>
+    </div>
+  );
+}
+
+/* ── Hero card — floating glassy product mockup ── */
+function HeroCard() {
+  return (
+    <div style={{ position: 'relative' }}>
+      {/* Glow */}
+      <div style={{
+        position: 'absolute', inset: -40,
+        background: `radial-gradient(circle at 50% 50%, ${ACCENT} 0%, transparent 60%)`,
+        opacity: 0.15, filter: 'blur(40px)', pointerEvents: 'none',
+      }} />
+      <div style={{
+        position: 'relative', background: 'white', borderRadius: 24,
+        border: '1px solid oklch(0.92 0.005 90)',
+        boxShadow: '0 24px 48px -12px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.5) inset',
+        overflow: 'hidden',
+      }}>
+        {/* Mac chrome */}
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '12px 16px',
+          borderBottom: '1px solid oklch(0.94 0.005 90)',
+        }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'oklch(0.85 0.05 30)' }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'oklch(0.88 0.05 80)' }} />
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'oklch(0.85 0.06 145)' }} />
+          <span className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', marginLeft: 12 }}>
+            arcanalytics.app/analyze/0428
+          </span>
+        </div>
+
+        <div style={{ padding: 28, display: 'grid', gap: 20 }}>
+          {/* Score + mini brain */}
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600" />
-                <span className="text-lg font-bold text-white">ArcAnalytics</span>
+              <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', letterSpacing: '0.1em' }}>
+                COMPOSITE SCORE
               </div>
-              <p className="text-sm">
-                AI-powered ad intelligence for modern marketers.
-              </p>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginTop: 4 }}>
+                <span style={{
+                  fontFamily: 'var(--v3-font-serif)',
+                  fontSize: 64, fontWeight: 400, lineHeight: 0.9, letterSpacing: '-0.03em',
+                }}>
+                  78<span style={{ color: 'var(--v3-ink-3)', fontSize: 28 }}>.4</span>
+                </span>
+                <span style={{
+                  background: 'oklch(0.94 0.06 155)', color: 'oklch(0.4 0.13 155)',
+                  fontSize: 11, fontWeight: 600, padding: '4px 10px', borderRadius: 999,
+                }}>↑ 84th pctile</span>
+              </div>
             </div>
-            
-            <div>
-              <h4 className="font-semibold text-white mb-4">Product</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/analyze" className="hover:text-white">Analysis</Link></li>
-                <li><Link href="/dashboard" className="hover:text-white">Dashboard</Link></li>
-                <li><Link href="#features" className="hover:text-white">Features</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-white mb-4">Company</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white">About</a></li>
-                <li><a href="#" className="hover:text-white">Blog</a></li>
-                <li><a href="#" className="hover:text-white">Contact</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-semibold text-white mb-4">Legal</h4>
-              <ul className="space-y-2 text-sm">
-                <li><a href="#" className="hover:text-white">Privacy</a></li>
-                <li><a href="#" className="hover:text-white">Terms</a></li>
-                <li><a href="#" className="hover:text-white">Security</a></li>
-              </ul>
+            <div style={{ width: 100, height: 80 }}>
+              <BrainViz size={100} showLabels={false} />
             </div>
           </div>
-          
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm">
-            <p>&copy; 2024 ArcAnalytics. All rights reserved.</p>
+
+          {/* ROI timeline */}
+          <div style={{
+            padding: 14, background: 'oklch(0.985 0.003 90)',
+            borderRadius: 12, border: '1px solid oklch(0.94 0.005 90)',
+          }}>
+            <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', letterSpacing: '0.1em', marginBottom: 6 }}>
+              P(CONVERT) · 14.0s
+            </div>
+            <ROITimeline height={44} />
+          </div>
+
+          {/* Objective bars */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+            {[['Purchase', 82], ['Engagement', 76], ['Virality', 68], ['Clarity', 88]].map(([k, v]) => (
+              <div key={k} style={{ padding: 10, background: 'oklch(0.985 0.003 90)', borderRadius: 10 }}>
+                <div style={{ fontSize: 10, color: 'var(--v3-ink-3)', marginBottom: 4 }}>{k}</div>
+                <span style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 22, fontWeight: 500 }}>{v}</span>
+                <div style={{
+                  height: 3, background: 'oklch(0.94 0.005 90)',
+                  borderRadius: 999, marginTop: 6, overflow: 'hidden',
+                }}>
+                  <div style={{ width: `${v}%`, height: '100%', background: ACCENT, borderRadius: 999 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Recommendation chip */}
+          <div style={{
+            padding: '12px 14px',
+            background: `linear-gradient(120deg, oklch(0.95 0.05 180 / 0.4), oklch(0.97 0.03 45 / 0.3))`,
+            border: '1px solid oklch(0.9 0.04 180)',
+            borderRadius: 12,
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <div style={{
+              width: 28, height: 28, borderRadius: 8,
+              background: 'white', border: '1px solid oklch(0.9 0.04 180)',
+              display: 'grid', placeItems: 'center',
+              fontSize: 14, color: ACCENT, fontWeight: 600,
+            }}>✦</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--v3-ink)' }}>Tighten the cut at 7–9s</div>
+              <div style={{ fontSize: 11, color: 'var(--v3-ink-2)' }}>
+                Projected lift: <span style={{ fontWeight: 600, color: ACCENT }}>+4.1 pts</span>
+              </div>
+            </div>
+            <span style={{ fontSize: 13, color: 'var(--v3-ink-3)' }}>→</span>
           </div>
         </div>
-      </footer>
+      </div>
+    </div>
+  );
+}
+
+/* ── Report preview — 3-col card ── */
+function ReportPreview() {
+  return (
+    <div style={{
+      background: 'white', borderRadius: 20,
+      border: '1px solid oklch(0.92 0.005 90)',
+      boxShadow: '0 12px 32px -8px rgba(0,0,0,0.06)',
+      overflow: 'hidden',
+      display: 'grid', gridTemplateColumns: '300px 1fr 1fr',
+    }}>
+      {/* Creative col */}
+      <div style={{ padding: 24, borderRight: '1px solid oklch(0.94 0.005 90)' }}>
+        <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', letterSpacing: '0.1em', marginBottom: 12 }}>CREATIVE</div>
+        <div style={{
+          aspectRatio: '4/5', borderRadius: 12,
+          background: `linear-gradient(135deg, oklch(0.94 0.04 30) 0%, oklch(0.92 0.04 350) 100%)`,
+          display: 'grid', placeItems: 'center', position: 'relative', overflow: 'hidden',
+        }}>
+          <span className="mono" style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>[ ad preview ]</span>
+        </div>
+        <div style={{ marginTop: 12, fontSize: 12, color: 'var(--v3-ink-2)' }}>
+          <div style={{ fontWeight: 500 }}>hero_v3_final.mp4</div>
+          <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', marginTop: 2 }}>4.2MB · 14.0s · 1080×1350</div>
+        </div>
+      </div>
+
+      {/* Brain col */}
+      <div style={{ padding: 28, borderRight: '1px solid oklch(0.94 0.005 90)' }}>
+        <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', letterSpacing: '0.1em' }}>CORTICAL ACTIVATION</div>
+        <div style={{ marginTop: 12, aspectRatio: '1/1' }}>
+          <BrainViz size={320} />
+        </div>
+      </div>
+
+      {/* Recommendations col */}
+      <div style={{ padding: 28 }}>
+        <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', letterSpacing: '0.1em', marginBottom: 12 }}>
+          RECOMMENDATIONS
+        </div>
+        {[
+          ['Tighten the cut at 7–9s', '+4.1', 'attention'],
+          ['Boost CTA contrast +60%', '+3.2', 'clarity'],
+          ['Move logo to opening frame', '+2.9', 'memory'],
+        ].map(([t, lift, tag], i) => (
+          <div key={i} style={{
+            display: 'grid', gridTemplateColumns: '24px 1fr auto',
+            gap: 10, padding: '14px 0', alignItems: 'center',
+            borderTop: i === 0 ? 'none' : '1px solid oklch(0.95 0.005 90)',
+          }}>
+            <span className="mono" style={{ fontSize: 11, color: ACCENT, fontWeight: 600 }}>
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--v3-ink)' }}>{t}</div>
+              <span className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', textTransform: 'uppercase' }}>{tag}</span>
+            </div>
+            <span style={{
+              fontSize: 11, fontWeight: 600, padding: '4px 8px', borderRadius: 6,
+              background: 'oklch(0.94 0.06 155)', color: 'oklch(0.4 0.13 155)',
+            }}>{lift}</span>
+          </div>
+        ))}
+
+        <div style={{
+          marginTop: 16, padding: 16, borderRadius: 12,
+          background: `linear-gradient(135deg, oklch(0.96 0.04 180), oklch(0.97 0.03 200))`,
+        }}>
+          <div className="mono" style={{ fontSize: 10, color: 'var(--v3-ink-3)', letterSpacing: '0.1em' }}>PROJECTED LIFT</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 4 }}>
+            <span style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 36, fontWeight: 400 }}>+10.2</span>
+            <span style={{ fontSize: 12, color: 'var(--v3-ink-2)' }}>composite points · 78.4 → 88.6</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
