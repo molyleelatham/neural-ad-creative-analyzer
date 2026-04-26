@@ -85,28 +85,9 @@ export default function HomePage() {
               <Link href="/analyze" className="v3-btn v3-btn-primary" style={{ fontSize: 14, padding: '14px 24px' }}>
                 Analyze your first ad →
               </Link>
-              <Link href="/analyze" className="v3-btn v3-btn-secondary" style={{ fontSize: 14, padding: '14px 22px' }}>
-                <span style={{
-                  width: 18, height: 18, borderRadius: '50%',
-                  background: ACCENT, color: 'white',
-                  display: 'grid', placeItems: 'center', fontSize: 9,
-                }}>▶</span>
-                Watch demo · 0:48
-              </Link>
             </div>
 
-            {/* Trust strip */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
-              <span className="mono" style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>TRUSTED BY MARKETERS AT</span>
-              <div style={{ display: 'flex', gap: 28, alignItems: 'center', opacity: 0.5 }}>
-                {['Acme', 'Lumen', 'Halo', 'Vertex', 'Northbeam'].map((n) => (
-                  <span key={n} style={{
-                    fontFamily: 'var(--v3-font-serif)',
-                    fontSize: 17, fontWeight: 500, letterSpacing: '-0.01em',
-                  }}>{n}</span>
-                ))}
-              </div>
-            </div>
+            
           </div>
 
           {/* Right — floating hero card */}
