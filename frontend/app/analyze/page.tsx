@@ -334,6 +334,94 @@ export default function AnalyzePage() {
     }
   }, [fileA, fileB, loading]);
 
+  // Export analysis function
+  const exportAnalysis = async () => {
+    if (!result) return;
+    
+    try {
+      // Create comprehensive analysis export object
+      const exportData = {
+        id: `analysis_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date().toISOString(),
+        mode: result.mode,
+        objective: objective,
+        audience: audience,
+        variants: result.variants.map((variant, index) => ({
+          variant_id: variant.variant_id,
+          filename: variant.filename,
+          scores: variant.visual.scores,
+          neural_features: variant.visual.neural_features,
+          segments: variant.visual.segments,
+          pillar_scores: variant.visual.pillar_scores,
+          brain_single: variant.brain_single,
+          metrics: {
+            overall_score: Object.values(variant.visual.scores).reduce((a, b) => a + b, 0) / Object.values(variant.visual.scores).length,
+            top_pillar: variant.visual.pillar_scores?.[0]?.label || 'N/A',
+            segment_count: variant.visual.segments.length,
+            confidence_avg: variant.visual.segments.reduce((sum, seg) => sum + seg.confidence, 0) / variant.visual.segments.length
+          }
+        })),
+        comparison: result.brain_compare ? {
+          winner: result.brain_compare.ab_result?.P_A_wins_overall >= 0.5 ? 'Variant A' : 'Variant B',
+          confidence: result.brain_compare.ab_result?.P_A_wins_overall || 0.5,
+          lift_percentage: Math.abs(
+            (result.variants[0].visual.scores[objective] - result.variants[1].visual.scores[objective]) / 
+            result.variants[1].visual.scores[objective] * 100
+          ).toFixed(1)
+        } : null,
+        insights: {
+          key_findings: [],
+          recommendations: [],
+          performance_summary: `${result.mode === 'compare' ? 'A/B test' : 'Single analysis'} for ${objective} objective targeting ${audience} audience.`
+        },
+        metadata: {
+          export_version: '1.0',
+          platform: 'arcanalytics',
+          analysis_duration: analysisStatus.stage === 'complete' ? 'Completed' : 'In progress'
+        }
+      };
+
+      // Store in localStorage for immediate access
+      const existingExports = JSON.parse(localStorage.getItem('arcanalytics_exports') || '[]');
+      existingExports.push(exportData);
+      localStorage.setItem('arcanalytics_exports', JSON.stringify(existingExports));
+
+      // Send to backend for database storage
+      const response = await fetch(`${BACKEND}/export-analysis`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(exportData)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to store analysis: ${response.status}`);
+      }
+
+      const storedResult = await response.json();
+      console.log('Analysis stored successfully:', storedResult);
+
+      // Trigger download of JSON file
+      const dataStr = JSON.stringify(exportData, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(dataBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${exportData.id}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      alert('Analysis exported and stored successfully!');
+
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Export failed. Please try again.');
+    }
+  };
+
 // Status indicator component
 const AnalysisStatus = () => {
   if (analysisStatus.stage === 'idle' || (!loading && !result)) return null;
@@ -755,6 +843,29 @@ const AnalysisStatus = () => {
                 </button>
               ))}
             </div>
+
+            {/* Export Button */}
+            {result && !loading && (
+              <div style={{ textAlign: 'right', marginBottom: 20 }}>
+                <button
+                  onClick={exportAnalysis}
+                  style={{
+                    ...pillBtn(true),
+                    padding: '10px 20px',
+                    fontSize: 13,
+                    background: 'oklch(0.95 0.005 90)',
+                    color: ACCENT,
+                    border: `1px solid ${ACCENT}`,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8
+                  }}
+                >
+                  <span>📤</span>
+                  Export Analysis
+                </button>
+              </div>
+            )}
 
             {tab === 'vision'  && <VisionTab  result={result} objective={objective} />}
             {tab === 'brain'   && <BrainTab   result={result} />}

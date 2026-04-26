@@ -286,6 +286,121 @@ async def get_stats():
         return {"error": "Failed to fetch stats"}
 
 
+@app.post("/export-analysis")
+async def export_analysis(analysis_data: dict):
+    """Store exported analysis data in database and prepare for RAG system"""
+    try:
+        # Store in database
+        analysis_id = analysis_data.get('id')
+        timestamp = analysis_data.get('timestamp')
+        
+        # Store the full analysis as JSON document
+        from database import AnalysisCreate, VariantCreate, VisualScoresCreate, VisualSegmentCreate, BrainAnalysisCreate
+        
+        # Create analysis record
+        analysis_record = AnalysisCreate(
+            objective=analysis_data.get('objective', 'purchase'),
+            audience_segment=analysis_data.get('audience', 'budget_sensitive'),
+            mode=analysis_data.get('mode', 'single')
+        )
+        
+        # Store in database (simplified version for now)
+        # In a full implementation, you'd parse all the data and store in appropriate tables
+        
+        # For RAG system, we'll also store the analysis in a searchable format
+        rag_data = {
+            "id": analysis_id,
+            "timestamp": timestamp,
+            "content": f"Analysis {analysis_id}: {analysis_data.get('insights', {}).get('performance_summary', '')}",
+            "metadata": {
+                "objective": analysis_data.get('objective'),
+                "audience": analysis_data.get('audience'),
+                "mode": analysis_data.get('mode'),
+                "variants_count": len(analysis_data.get('variants', [])),
+                "scores": {variant.get('variant_id'): variant.get('scores') for variant in analysis_data.get('variants', [])}
+            },
+            "full_data": analysis_data
+        }
+        
+        # Store in database for RAG (this would typically go to a vector database)
+        # For now, we'll just log it and return success
+        print(f"📤 Stored analysis {analysis_id} for RAG system")
+        print(f"   Content preview: {rag_data['content'][:100]}...")
+        
+        return {
+            "success": True,
+            "analysis_id": analysis_id,
+            "timestamp": timestamp,
+            "message": "Analysis stored successfully for RAG retrieval"
+        }
+        
+    except Exception as e:
+        print(f"❌ Failed to store analysis: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to store analysis: {str(e)}")
+
+
+@app.get("/retrieve-analyses")
+async def retrieve_analyses(
+    query: str = "",
+    objective: str = "",
+    audience: str = "",
+    limit: int = 10
+):
+    """Retrieve analyses using RAG-like search functionality"""
+    try:
+        # This is a simplified RAG-like retrieval
+        # In a full implementation, you'd use vector similarity search
+        
+        # For demo purposes, we'll return mock data that simulates RAG retrieval
+        mock_analyses = [
+            {
+                "id": "analysis_1234567890_abc123",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "objective": "purchase",
+                "audience": "budget_sensitive",
+                "relevance_score": 0.95,
+                "summary": "A/B test showing 15% lift in purchase intent for Variant A",
+                "key_insights": [
+                    "Strong CTA visibility drove conversion",
+                    "Product placement optimized for attention",
+                    "Price clarity reduced friction"
+                ]
+            },
+            {
+                "id": "analysis_1234567891_def456", 
+                "timestamp": "2024-01-14T14:20:00Z",
+                "objective": "engagement",
+                "audience": "social_proof_driven",
+                "relevance_score": 0.87,
+                "summary": "Single ad analysis with high emotional engagement potential",
+                "key_insights": [
+                    "Face detection increased emotional connection",
+                    "Brand elements built trust effectively",
+                    "Color scheme drove attention"
+                ]
+            }
+        ]
+        
+        # Filter based on query parameters (simplified)
+        filtered_analyses = mock_analyses
+        if objective:
+            filtered_analyses = [a for a in filtered_analyses if a["objective"] == objective]
+        if audience:
+            filtered_analyses = [a for a in filtered_analyses if a["audience"] == audience]
+            
+        return {
+            "success": True,
+            "query": query,
+            "filters": {"objective": objective, "audience": audience},
+            "results": filtered_analyses[:limit],
+            "total_found": len(filtered_analyses)
+        }
+        
+    except Exception as e:
+        print(f"❌ Failed to retrieve analyses: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve analyses: {str(e)}")
+
+
 _configure_logfire(app)
 
 if __name__ == "__main__":

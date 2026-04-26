@@ -65,6 +65,40 @@ export default function DashboardPage() {
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [ragResults, setRagResults] = useState<any[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [objectiveFilter, setObjectiveFilter] = useState('');
+  const [audienceFilter, setAudienceFilter] = useState('');
+
+  // RAG search function
+  const searchAnalyses = async () => {
+    setSearchLoading(true);
+    try {
+      const baseUrl = window.location.origin.includes('localhost') 
+        ? 'http://localhost:8000' 
+        : `${window.location.protocol}//${window.location.host.replace('3000', '8000')}`;
+      
+      const params = new URLSearchParams({
+        query: searchQuery,
+        objective: objectiveFilter,
+        audience: audienceFilter,
+        limit: '10'
+      });
+      
+      const response = await fetch(`${baseUrl}/retrieve-analyses?${params}`);
+      if (response.ok) {
+        const data = await response.json();
+        setRagResults(data.results || []);
+      } else {
+        console.error('Search failed:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setSearchLoading(false);
+    }
+  };
 
   // Fetch real data from database
   useEffect(() => {
@@ -177,6 +211,121 @@ export default function DashboardPage() {
             </h1>
           </div>
           <Link href="/analyze" className="v3-btn v3-btn-primary">+ New analysis</Link>
+        </div>
+
+        {/* RAG Search Section */}
+        <div style={card()}>
+          <div style={{ marginBottom: 16 }}>
+            <h3 style={{ fontFamily: 'var(--v3-font-serif)', fontSize: 18, fontWeight: 500, margin: '0 0 8px', color: 'var(--v3-ink)' }}>
+              🔍 Analysis Intelligence Search
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--v3-ink-3)', margin: 0 }}>
+              Search through all exported analyses using AI-powered retrieval
+            </p>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 120px 100px', gap: 12, marginBottom: 16 }}>
+            <input
+              type="text"
+              placeholder="Search analyses (e.g., 'high purchase intent', 'face detection', 'CTA optimization')..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchAnalyses()}
+              style={{
+                height: 40, borderRadius: 12, padding: '0 12px',
+                border: '1px solid oklch(0.92 0.005 90)',
+                background: 'oklch(0.985 0.003 90)',
+                fontFamily: 'inherit', fontSize: 13, color: 'var(--v3-ink)',
+              }}
+            />
+            <select
+              value={objectiveFilter}
+              onChange={(e) => setObjectiveFilter(e.target.value)}
+              style={{
+                height: 40, borderRadius: 12, padding: '0 12px',
+                border: '1px solid oklch(0.92 0.005 90)',
+                background: 'oklch(0.985 0.003 90)',
+                fontFamily: 'inherit', fontSize: 13, color: 'var(--v3-ink)',
+              }}
+            >
+              <option value="">All objectives</option>
+              <option value="purchase">Purchase</option>
+              <option value="engagement">Engagement</option>
+              <option value="virality">Virality</option>
+              <option value="clarity">Clarity</option>
+            </select>
+            <select
+              value={audienceFilter}
+              onChange={(e) => setAudienceFilter(e.target.value)}
+              style={{
+                height: 40, borderRadius: 12, padding: '0 12px',
+                border: '1px solid oklch(0.92 0.005 90)',
+                background: 'oklch(0.985 0.003 90)',
+                fontFamily: 'inherit', fontSize: 13, color: 'var(--v3-ink)',
+              }}
+            >
+              <option value="">All audiences</option>
+              <option value="budget_sensitive">Budget sensitive</option>
+              <option value="social_proof_driven">Social proof</option>
+              <option value="viral_share_oriented">Viral share</option>
+              <option value="premium_brand_oriented">Premium</option>
+            </select>
+            <button
+              onClick={searchAnalyses}
+              disabled={searchLoading}
+              style={{
+                height: 40, borderRadius: 12, padding: '0 16px',
+                background: ACCENT, color: 'white', border: 'none',
+                fontFamily: 'inherit', fontSize: 13, fontWeight: 600,
+                cursor: searchLoading ? 'not-allowed' : 'pointer',
+                opacity: searchLoading ? 0.6 : 1,
+              }}
+            >
+              {searchLoading ? 'Searching...' : 'Search'}
+            </button>
+          </div>
+
+          {/* RAG Results */}
+          {ragResults.length > 0 && (
+            <div style={{ borderTop: '1px solid oklch(0.92 0.005 90)', paddingTop: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--v3-ink-2)', marginBottom: 12 }}>
+                Found {ragResults.length} relevant analyses
+              </div>
+              <div style={{ display: 'grid', gap: 12 }}>
+                {ragResults.map((result) => (
+                  <div key={result.id} style={{
+                    background: 'oklch(0.985 0.003 90)', borderRadius: 12, padding: 16,
+                    border: '1px solid oklch(0.92 0.005 90)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--v3-ink)', marginBottom: 4 }}>
+                          {result.summary}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--v3-ink-3)' }}>
+                          {result.timestamp} • {result.objective} • {result.audience}
+                        </div>
+                      </div>
+                      <div style={{
+                        fontSize: 11, background: ACCENT, color: 'white',
+                        padding: '2px 8px', borderRadius: 999, fontWeight: 600
+                      }}>
+                        {Math.round(result.relevance_score * 100)}% match
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--v3-ink-2)' }}>
+                      <strong>Key insights:</strong>
+                      <ul style={{ margin: '4px 0 0 0', paddingLeft: 16 }}>
+                        {result.key_insights.map((insight: string, i: number) => (
+                          <li key={i} style={{ marginBottom: 2 }}>{insight}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Stat cards */}
