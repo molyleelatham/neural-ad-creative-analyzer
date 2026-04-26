@@ -1,5 +1,10 @@
+import sys
+import os
 from pathlib import Path
 from typing import Annotated
+
+# Add the backend directory to Python path for imports
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from dotenv import load_dotenv
 
@@ -14,13 +19,35 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from fastapi.middleware.cors import CORSMiddleware
 
-from models.schemas import (
-    AudienceSegment,
-    CampaignObjective,
-    ComparisonResult,
-    HealthResponse,
-)
-from models.merged_schemas import FullAnalysisResult
+try:
+    from models.schemas import (
+        AudienceSegment,
+        CampaignObjective,
+        ComparisonResult,
+        HealthResponse,
+        ImageAnalysisRequest,
+        ImageAnalysisResponse,
+        NeuralPredictorRequest,
+        NeuralPredictorResponse,
+        Segment,
+        Variant,
+    )
+    from models.merged_schemas import FullAnalysisResult
+except ImportError:
+    # Fallback for deployment environments
+    from .models.schemas import (
+        AudienceSegment,
+        CampaignObjective,
+        ComparisonResult,
+        HealthResponse,
+        ImageAnalysisRequest,
+        ImageAnalysisResponse,
+        NeuralPredictorRequest,
+        NeuralPredictorResponse,
+        Segment,
+        Variant,
+    )
+    from .models.merged_schemas import FullAnalysisResult
 from services.compare_service import analyze_variants
 from services.full_analysis_service import run_full_analysis
 from services.tribev2_client import tribev2_health

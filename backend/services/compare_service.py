@@ -31,7 +31,8 @@ def _overall_score(analysis: VariantAnalysis, objective: CampaignObjective) -> f
     """Blend objective weighting with general quality for overall winner."""
     s = analysis.scores
     obj = _objective_score(analysis, objective)
-    blend = 0.55 * obj + 0.15 * s.purchase + 0.15 * s.engagement + 0.15 * s.clarity
+    # Give clarity more weight in overall scoring as it's now the primary objective
+    blend = 0.55 * obj + 0.10 * s.purchase + 0.10 * s.engagement + 0.25 * s.clarity
     return blend
 
 

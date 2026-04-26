@@ -5,10 +5,10 @@ from pydantic import BaseModel, Field
 
 
 class CampaignObjective(str, Enum):
+    clarity = "clarity"
     purchase = "purchase"
     engagement = "engagement"
     virality = "virality"
-    clarity = "clarity"
 
 
 class AudienceSegment(str, Enum):
