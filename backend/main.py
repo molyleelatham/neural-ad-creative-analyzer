@@ -1,5 +1,6 @@
 import sys
 import os
+import uuid
 from pathlib import Path
 from typing import Annotated
 
@@ -213,6 +214,7 @@ async def analyze_full(
             objective=objective.value,
             audience_segment=audience_segment.value,
             mode=len(files) == 2 and "compare" or "single",
+            organization_id=uuid.UUID('12345678-1234-5678-9abc-123456789abc'),  # Default org ID
             metadata={"files": [v[1] for v in variant_inputs]}
         )
         
