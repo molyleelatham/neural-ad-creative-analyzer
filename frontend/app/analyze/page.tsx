@@ -1532,13 +1532,13 @@ function VisionTab({ result, objective }: { result: AnalysisResult | null; objec
                   gap: 12,
                   marginBottom: 16,
                   padding: '12px 16px',
-                  background: `linear-gradient(135deg, ${PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.9 0.03 90)'}15, transparent)`,
+                  background: `linear-gradient(135deg, ${getPillarColor(pillar)}15, transparent)`,
                   borderRadius: 8,
-                  border: `1px solid ${PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.8 0.03 90)'}30`,
+                  border: `1px solid ${getPillarColor(pillar)}30`,
                 }}>
                   <span style={{
                     fontSize: 24,
-                    color: PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.6 0.05 90)',
+                    color: getPillarColor(pillar),
                   }}>
                     {getPillarIcon(pillar)}
                   </span>
@@ -1546,7 +1546,7 @@ function VisionTab({ result, objective }: { result: AnalysisResult | null; objec
                     <div style={{
                       fontSize: 15,
                       fontWeight: 600,
-                      color: PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.5 0.05 90)',
+                      color: getPillarColor(pillar),
                       textTransform: 'capitalize',
                       marginBottom: 2,
                     }}>
@@ -1616,7 +1616,7 @@ function VisionTab({ result, objective }: { result: AnalysisResult | null; objec
                             width: `${Math.min(100, weightRounded * 2.5)}%`, height: '100%',
                             background: isImportant 
                               ? `linear-gradient(90deg, ${ACCENT}, oklch(0.65 0.13 200))`
-                              : `linear-gradient(90deg, ${PILLAR_COLORS[pillar as keyof typeof PILLAR_COLORS] || 'oklch(0.70 0.008 90)'}, oklch(0.65 0.13 200))`,
+                              : `linear-gradient(90deg, ${getPillarColor(pillar)}, oklch(0.65 0.13 200))`,
                             borderRadius: 999,
                           }} />
                         </div>

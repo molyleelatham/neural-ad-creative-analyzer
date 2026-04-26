@@ -155,10 +155,7 @@ export default function HomePage() {
             Stop guessing.<br />
             Start <em style={{ color: ACCENT, fontStyle: 'italic' }}>knowing.</em>
           </h2>
-          <p style={{ fontSize: 18, color: 'var(--v3-ink-2)', maxWidth: 480, margin: '24px auto 36px' }}>
-            Your first three reports are on us. No credit card.
-          </p>
-          <Link href="/analyze" className="v3-btn v3-btn-primary" style={{ fontSize: 15, padding: '16px 28px' }}>
+          <Link href="/analyze" className="v3-btn v3-btn-primary" style={{ fontSize: 15, padding: '16px 28px', marginTop: 36 }}>
             Upload your first ad
           </Link>
         </div>
