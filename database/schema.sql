@@ -1,5 +1,6 @@
 -- ArcAnalytics Database Schema
 -- PostgreSQL schema for storing ad analysis data and user information
+-- Applied by backend/migrate.py. The statements below are safe to run again.
 
 -- Enable UUID extension for generating unique IDs
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -9,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ============================================================================
 
 -- Organizations/Companies that use the platform
-CREATE TABLE organizations (
+CREATE TABLE IF NOT EXISTS organizations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     slug VARCHAR(100) UNIQUE NOT NULL,
@@ -21,7 +22,7 @@ CREATE TABLE organizations (
 );
 
 -- Users belonging to organizations
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255),
@@ -39,7 +40,7 @@ CREATE TABLE users (
 -- ============================================================================
 
 -- Campaigns to group related analyses
-CREATE TABLE campaigns (
+CREATE TABLE IF NOT EXISTS campaigns (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -53,7 +54,7 @@ CREATE TABLE campaigns (
 );
 
 -- Individual analysis sessions
-CREATE TABLE analyses (
+CREATE TABLE IF NOT EXISTS analyses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     campaign_id UUID REFERENCES campaigns(id) ON DELETE SET NULL,
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
@@ -87,7 +88,7 @@ CREATE TABLE analyses (
 -- ============================================================================
 
 -- Individual ad variants (creatives) analyzed
-CREATE TABLE variants (
+CREATE TABLE IF NOT EXISTS variants (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     analysis_id UUID REFERENCES analyses(id) ON DELETE CASCADE,
     variant_id VARCHAR(50) NOT NULL, -- e.g., "v1", "v2"
@@ -102,7 +103,7 @@ CREATE TABLE variants (
 );
 
 -- Visual analysis scores for each variant
-CREATE TABLE visual_scores (
+CREATE TABLE IF NOT EXISTS visual_scores (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     variant_id UUID REFERENCES variants(id) ON DELETE CASCADE,
     
@@ -122,7 +123,7 @@ CREATE TABLE visual_scores (
 );
 
 -- Detected visual elements/segments
-CREATE TABLE visual_segments (
+CREATE TABLE IF NOT EXISTS visual_segments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     variant_id UUID REFERENCES variants(id) ON DELETE CASCADE,
     
@@ -142,7 +143,7 @@ CREATE TABLE visual_segments (
 );
 
 -- Brain analysis results (from TribeV2)
-CREATE TABLE brain_analysis (
+CREATE TABLE IF NOT EXISTS brain_analysis (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     variant_id UUID REFERENCES variants(id) ON DELETE CASCADE,
     
@@ -172,7 +173,7 @@ CREATE TABLE brain_analysis (
 -- ============================================================================
 
 -- A/B test comparisons between variants
-CREATE TABLE comparisons (
+CREATE TABLE IF NOT EXISTS comparisons (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     analysis_id UUID REFERENCES analyses(id) ON DELETE CASCADE,
     
@@ -194,7 +195,7 @@ CREATE TABLE comparisons (
 );
 
 -- Industry benchmarks for percentile calculations
-CREATE TABLE industry_benchmarks (
+CREATE TABLE IF NOT EXISTS industry_benchmarks (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     industry VARCHAR(100) NOT NULL,
     objective VARCHAR(50) NOT NULL,
@@ -223,7 +224,7 @@ CREATE TABLE industry_benchmarks (
 -- ============================================================================
 
 -- API usage tracking
-CREATE TABLE usage_logs (
+CREATE TABLE IF NOT EXISTS usage_logs (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
     user_id UUID REFERENCES users(id) ON DELETE SET NULL,
@@ -244,7 +245,7 @@ CREATE TABLE usage_logs (
 );
 
 -- Monthly usage summaries for billing
-CREATE TABLE monthly_usage (
+CREATE TABLE IF NOT EXISTS monthly_usage (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
     year INTEGER NOT NULL,
@@ -273,31 +274,31 @@ CREATE TABLE monthly_usage (
 -- ============================================================================
 
 -- Organization and user indexes
-CREATE INDEX idx_users_organization_id ON users(organization_id);
-CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_organization_id ON users(organization_id);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
 -- Analysis indexes
-CREATE INDEX idx_analyses_organization_id ON analyses(organization_id);
-CREATE INDEX idx_analyses_campaign_id ON analyses(campaign_id);
-CREATE INDEX idx_analyses_user_id ON analyses(user_id);
-CREATE INDEX idx_analyses_created_at ON analyses(created_at);
-CREATE INDEX idx_analyses_status ON analyses(status);
-CREATE INDEX idx_analyses_objective ON analyses(objective);
-CREATE INDEX idx_analyses_mode ON analyses(mode);
+CREATE INDEX IF NOT EXISTS idx_analyses_organization_id ON analyses(organization_id);
+CREATE INDEX IF NOT EXISTS idx_analyses_campaign_id ON analyses(campaign_id);
+CREATE INDEX IF NOT EXISTS idx_analyses_user_id ON analyses(user_id);
+CREATE INDEX IF NOT EXISTS idx_analyses_created_at ON analyses(created_at);
+CREATE INDEX IF NOT EXISTS idx_analyses_status ON analyses(status);
+CREATE INDEX IF NOT EXISTS idx_analyses_objective ON analyses(objective);
+CREATE INDEX IF NOT EXISTS idx_analyses_mode ON analyses(mode);
 
 -- Variant indexes
-CREATE INDEX idx_variants_analysis_id ON variants(analysis_id);
-CREATE INDEX idx_variants_filename ON variants(filename);
+CREATE INDEX IF NOT EXISTS idx_variants_analysis_id ON variants(analysis_id);
+CREATE INDEX IF NOT EXISTS idx_variants_filename ON variants(filename);
 
 -- Score indexes
-CREATE INDEX idx_visual_scores_variant_id ON visual_scores(variant_id);
-CREATE INDEX idx_visual_segments_variant_id ON visual_segments(variant_id);
-CREATE INDEX idx_brain_analysis_variant_id ON brain_analysis(variant_id);
+CREATE INDEX IF NOT EXISTS idx_visual_scores_variant_id ON visual_scores(variant_id);
+CREATE INDEX IF NOT EXISTS idx_visual_segments_variant_id ON visual_segments(variant_id);
+CREATE INDEX IF NOT EXISTS idx_brain_analysis_variant_id ON brain_analysis(variant_id);
 
 -- Usage indexes
-CREATE INDEX idx_usage_logs_organization_id ON usage_logs(organization_id);
-CREATE INDEX idx_usage_logs_created_at ON usage_logs(created_at);
-CREATE INDEX idx_monthly_usage_organization_period ON monthly_usage(organization_id, year, month);
+CREATE INDEX IF NOT EXISTS idx_usage_logs_organization_id ON usage_logs(organization_id);
+CREATE INDEX IF NOT EXISTS idx_usage_logs_created_at ON usage_logs(created_at);
+CREATE INDEX IF NOT EXISTS idx_monthly_usage_organization_period ON monthly_usage(organization_id, year, month);
 
 -- ============================================================================
 -- TRIGGERS FOR UPDATED_AT
@@ -312,11 +313,17 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
--- Create triggers for tables with updated_at
+-- Create triggers for tables with updated_at.
+-- Drop first so applying this file again does not fail.
+DROP TRIGGER IF EXISTS update_organizations_updated_at ON organizations;
 CREATE TRIGGER update_organizations_updated_at BEFORE UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_campaigns_updated_at ON campaigns;
 CREATE TRIGGER update_campaigns_updated_at BEFORE UPDATE ON campaigns FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_analyses_updated_at ON analyses;
 CREATE TRIGGER update_analyses_updated_at BEFORE UPDATE ON analyses FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_monthly_usage_updated_at ON monthly_usage;
 CREATE TRIGGER update_monthly_usage_updated_at BEFORE UPDATE ON monthly_usage FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- ============================================================================
@@ -324,7 +331,7 @@ CREATE TRIGGER update_monthly_usage_updated_at BEFORE UPDATE ON monthly_usage FO
 -- ============================================================================
 
 -- Analysis summary view
-CREATE VIEW analysis_summary AS
+CREATE OR REPLACE VIEW analysis_summary AS
 SELECT 
     a.id,
     a.mode,
@@ -353,7 +360,7 @@ LEFT JOIN brain_analysis ba ON v.id = ba.variant_id
 GROUP BY a.id, o.name, c.name, u.email;
 
 -- Organization usage view
-CREATE VIEW organization_usage AS
+CREATE OR REPLACE VIEW organization_usage AS
 SELECT 
     o.id as organization_id,
     o.name,

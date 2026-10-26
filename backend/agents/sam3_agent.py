@@ -163,8 +163,9 @@ def _load_class_remap() -> dict[str, dict[str, Any]]:
     if raw_path:
         path = Path(raw_path)
     else:
-        # Default to class_remap.csv in backend directory
-        path = Path(__file__).resolve().parent / "class_remap.csv"
+        # class_remap.csv lives in the backend directory, beside weightings.csv.
+        # parents[1] is that directory; parent is agents/, where the file is not.
+        path = Path(__file__).resolve().parents[1] / "class_remap.csv"
 
     if _REMAP_CACHE is not None and _REMAP_CACHE[0] == path:
         return _REMAP_CACHE[1]
